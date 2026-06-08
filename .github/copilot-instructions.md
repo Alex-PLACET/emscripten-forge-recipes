@@ -277,7 +277,7 @@ about:
 ```yaml
 extra:
   recipe-maintainers:
-  - Copilot
+  - {{github_username}}
 ```
 
 **Note:** Only use `Copilot` as maintainer.
