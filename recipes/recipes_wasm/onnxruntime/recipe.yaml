@@ -1,0 +1,142 @@
+context:
+  name: onnxruntime
+  version: 1.31.0
+
+source:
+- url: https://github.com/microsoft/onnxruntime/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a7e84230b5d509e48fbd6b73c2453a56345ccb22da34a46dac1f0cb4a2d6507b
+  patches:
+  - patches/0001-Disable-warnings-as-errors-on-Emscripten.patch
+  - patches/0002-Do-not-propagate-ASYNCIFY-to-side-modules.patch
+  - patches/0003-Fix-EM_ASM-exported-to-side-modules.patch
+  - patches/0004-Disable-LTO-on-Emscripten.patch
+
+build:
+  number: 0
+
+outputs:
+  - staging:
+      name: onnxruntime-build
+    build:
+      script:
+        file: build.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+      - cmake
+      - ninja
+      - cross-python_${{ target_platform }}
+      - python
+      - pybind11
+      host:
+      - python-dev
+      - pybind11
+      - numpy
+
+  - package:
+      name: onnxruntime-cpp
+      version: ${{ version }}
+    inherit: onnxruntime-build
+    build:
+      script: echo "Collecting ONNX Runtime C/C++ artifacts"
+      files:
+        include:
+        - lib/libonnxruntime_webassembly.a
+        - lib/cmake/onnxruntime/
+        - include/onnxruntime/**
+        - share/emdawnwebgpu/**
+    tests:
+    - package_contents:
+        lib:
+        - libonnxruntime_webassembly.a
+        include:
+        - onnxruntime/core/session/onnxruntime_c_api.h
+        files:
+        - lib/cmake/onnxruntime/onnxruntimeConfig.cmake
+        - share/emdawnwebgpu/emdawnwebgpu.port.py
+    - script:
+      - bash build_tests.sh
+      requirements:
+        build:
+        - ${{ compiler("cxx") }}
+        - cmake
+        - make
+      files:
+        recipe:
+        - build_tests.sh
+        - tests/
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
+    about:
+      homepage: https://onnxruntime.ai/
+      license: MIT
+      license_file: LICENSE
+      summary: ONNX Runtime WebAssembly static library for emscripten-wasm32
+      description: |
+        ONNX Runtime is a cross-platform inference and training machine-learning
+        accelerator. This package provides the WebAssembly static library
+        (libonnxruntime_webassembly.a) built with SIMD support, suitable for
+        linking into Emscripten-compiled C/C++ applications, together with the
+        public C/C++ API headers, a CMake package config, and the vendored
+        emdawnwebgpu package needed by the WebGPU execution provider.
+      documentation: https://onnxruntime.ai/docs/build/web.html
+      repository: https://github.com/microsoft/onnxruntime
+
+  - package:
+      name: onnxruntime
+      version: ${{ version }}
+    inherit: onnxruntime-build
+    build:
+      script: echo "Collecting ONNX Runtime Python bindings"
+      files:
+        include:
+        - lib/python*/site-packages/onnxruntime/**
+        exclude:
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+        - '**/test_*.py'
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
+    requirements:
+      run:
+      - python
+      - numpy
+    tests:
+    - package_contents:
+        site_packages:
+        - onnxruntime/__init__.py
+        - onnxruntime/capi/_pybind_state.py
+        - onnxruntime/capi/onnxruntime_pybind11_state.cpython-*.so
+        - onnxruntime/capi/build_and_package_info.py
+    # pytester and its pyjs runtime are only published for emscripten-wasm32.
+    - if: target_platform == "emscripten-wasm32"
+      then:
+        script: pytester
+        files:
+          recipe:
+          - test_onnxruntime.py
+        requirements:
+          build:
+          - pytester
+          run:
+          - pytester-run
+          - numpy
+    about:
+      homepage: https://onnxruntime.ai/
+      license: MIT
+      license_file: LICENSE
+      summary: ONNX Runtime Python bindings
+      description: |
+        ONNX Runtime is a cross-platform inference and training machine-learning
+        accelerator. This package provides the Python bindings
+        (onnxruntime) importable from an Emscripten-hosted Python runtime.
+      documentation: https://onnxruntime.ai/docs/build/web.html
+      repository: https://github.com/microsoft/onnxruntime
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

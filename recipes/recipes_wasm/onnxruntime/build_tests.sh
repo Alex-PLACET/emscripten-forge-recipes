@@ -4,7 +4,7 @@ set -e
 export CXXFLAGS="${CXXFLAGS:-} -fPIC"
 
 echo "=========================================="
-echo "Building test for onnxruntime-wasm..."
+echo "Building test for onnxruntime..."
 echo "=========================================="
 
 mkdir -p build_ort
@@ -34,7 +34,7 @@ emcmake cmake ../tests \
 
 emmake make
 
-echo "Running test for onnxruntime-wasm..."
+echo "Running test for onnxruntime..."
 node test_ort.js
 
 cd ..

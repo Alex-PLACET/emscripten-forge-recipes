@@ -1,0 +1,20 @@
+--- a/cmake/onnxruntime_providers_webgpu.cmake
++++ b/cmake/onnxruntime_providers_webgpu.cmake
+@@ -213,12 +213,15 @@
+     )
+ 
+     if (onnxruntime_ENABLE_WEBASSEMBLY_JSPI)
+-      target_link_options(onnxruntime_providers_webgpu PUBLIC
++      target_link_options(onnxruntime_providers_webgpu PRIVATE
+         "SHELL:-s JSPI=1"
+       )
+     else()
+       # ASYNCIFY is required for WGPUFuture support (ie. async functions in WebGPU API)
+-      target_link_options(onnxruntime_providers_webgpu PUBLIC
++      # Use PRIVATE: these options must not propagate to consumers that are built as
++      # Emscripten side modules (e.g. the python bindings), where an imported
++      # __asyncify_state global cannot be resolved by the dynamic loader.
++      target_link_options(onnxruntime_providers_webgpu PRIVATE
+         "SHELL:-s ASYNCIFY=1"
+         "SHELL:-s ASYNCIFY_STACK_SIZE=65536"
+       )

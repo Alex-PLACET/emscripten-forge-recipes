@@ -1,0 +1,15 @@
+--- a/cmake/adjust_global_compile_flags.cmake
++++ b/cmake/adjust_global_compile_flags.cmake
+@@ -25,8 +25,10 @@
+     # (2) "-flto=thin" does not work correctly for wasm-ld.
+     #     we don't set onnxruntime_ENABLE_LTO because it appends flag "-flto=thin"
+     #     instead, we manually set CMAKE_CXX_FLAGS "-flto"
+-    string(APPEND CMAKE_C_FLAGS " -flto")
+-    string(APPEND CMAKE_CXX_FLAGS " -flto")
++    # Disabled for emscripten-forge: with -flto the archive members of
++    # libonnxruntime_webassembly.a are emitted as LLVM bitcode rather than
++    # WebAssembly object files, which fails generic-testing (`Format: WASM`)
++    # and makes the static library unusable by tooling that cannot read bitcode.
+   endif()
+ 
+   if (onnxruntime_ENABLE_WEBASSEMBLY_DEBUG_INFO)
