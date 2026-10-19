@@ -1,0 +1,20 @@
+diff --git a/src/wasm/font.cpp b/src/wasm/font.cpp
+index a6485a95eb..31d2d97aaf 100644
+--- a/src/wasm/font.cpp
++++ b/src/wasm/font.cpp
+@@ -91,7 +91,14 @@ public:
+         m_nativeFontInfo.SetFaceName(info.GetFaceName());
+         m_nativeFontInfo.SetFamily(info.GetFamily());
+         // TODO: support font size in pixels
+-        m_nativeFontInfo.SetFractionalPointSize(info.GetFractionalPointSize());
++        if (info.IsUsingSizeInPixels())
++        {
++          m_nativeFontInfo.SetFractionalPointSize(info.GetPixelSize().y);
++        }
++        else
++        {
++          m_nativeFontInfo.SetFractionalPointSize(info.GetFractionalPointSize());
++        }
+         m_nativeFontInfo.SetStyle(info.GetStyle());
+         m_nativeFontInfo.SetWeight(info.GetWeight());
+         m_nativeFontInfo.SetUnderlined(info.IsUnderlined());

@@ -1,0 +1,432 @@
+diff --git a/autoconf_inc.m4 b/autoconf_inc.m4
+index 826170d6a5..d967e0d470 100644
+--- a/autoconf_inc.m4
++++ b/autoconf_inc.m4
+@@ -464,6 +464,19 @@ dnl ### begin block 20_COND_PLATFORM_UNIX_1_USE_PLUGINS_0[wx.bkl] ###
+         COND_PLATFORM_UNIX_1_USE_PLUGINS_0=""
+     fi
+     AC_SUBST(COND_PLATFORM_UNIX_1_USE_PLUGINS_0)
++dnl ### begin block 20_COND_TOOLKIT_WASM[wx.bkl] ###
++    COND_TOOLKIT_WASM="#"
++    if test "x$TOOLKIT" = "xWASM" ; then
++        COND_TOOLKIT_WASM=""
++    fi
++    AC_SUBST(COND_TOOLKIT_WASM)
++dnl ### begin block 20_COND_TOOLKIT_WASM_USE_GUI_1[wx.bkl] ###
++    COND_TOOLKIT_WASM_USE_GUI_1="#"
++    if test "x$TOOLKIT" = "xWASM" -a "x$USE_GUI" = "x1" ; then
++        COND_TOOLKIT_WASM_USE_GUI_1=""
++    fi
++    AC_SUBST(COND_TOOLKIT_WASM_USE_GUI_1)
++
+ dnl ### begin block 20_COND_PLATFORM_WIN32_0[../../demos/bombs/bombs.bkl,../../demos/forty/forty.bkl,../../demos/fractal/fractal.bkl,../../demos/life/life.bkl,../../demos/poem/poem.bkl,../../samples/access/access.bkl,../../samples/animate/anitest.bkl,../../samples/archive/archive.bkl,../../samples/artprov/artprov.bkl,../../samples/aui/auidemo.bkl,../../samples/calendar/calendar.bkl,../../samples/caret/caret.bkl,../../samples/clipboard/clipboard.bkl,../../samples/collpane/collpane.bkl,../../samples/combo/combo.bkl,../../samples/config/config.bkl,../../samples/console/console.bkl,../../samples/dataview/dataview.bkl,../../samples/debugrpt/debugrpt.bkl,../../samples/dialogs/dialogs.bkl,../../samples/dialup/dialup.bkl,../../samples/display/display.bkl,../../samples/dll/dll.bkl,../../samples/dnd/dnd.bkl,../../samples/docview/docview.bkl,../../samples/dragimag/dragimag.bkl,../../samples/drawing/drawing.bkl,../../samples/erase/erase.bkl,../../samples/event/event.bkl,../../samples/except/except.bkl,../../samples/exec/exec.bkl,../../samples/font/font.bkl,../../samples/fswatcher/fswatcher.bkl,../../samples/grid/grid.bkl,../../samples/help/help.bkl,../../samples/htlbox/htlbox.bkl,../../samples/html/about/about.bkl,../../samples/html/help/help.bkl,../../samples/html/helpview/helpview.bkl,../../samples/html/htmlctrl/htmlctrl.bkl,../../samples/html/printing/printing.bkl,../../samples/html/test/test.bkl,../../samples/html/virtual/virtual.bkl,../../samples/html/widget/widget.bkl,../../samples/html/zip/zip.bkl,../../samples/image/image.bkl,../../samples/internat/internat.bkl,../../samples/ipc/ipc.bkl,../../samples/joytest/joytest.bkl,../../samples/keyboard/keyboard.bkl,../../samples/layout/layout.bkl,../../samples/listctrl/listctrl.bkl,../../samples/mdi/mdi.bkl,../../samples/mediaplayer/mediaplayer.bkl,../../samples/memcheck/memcheck.bkl,../../samples/menu/menu.bkl,../../samples/minimal/minimal.bkl,../../samples/nativdlg/nativdlg.bkl,../../samples/notebook/notebook.bkl,../../samples/oleauto/oleauto.bkl,../../samples/opengl/cube/cube.bkl,../../samples/opengl/isosurf/isosurf.bkl,../../samples/opengl/penguin/penguin.bkl,../../samples/opengl/pyramid/pyramid.bkl,../../samples/ownerdrw/ownerdrw.bkl,../../samples/popup/popup.bkl,../../samples/power/power.bkl,../../samples/preferences/preferences.bkl,../../samples/printing/printing.bkl,../../samples/propgrid/propgrid.bkl,../../samples/regtest/regtest.bkl,../../samples/render/render.bkl,../../samples/ribbon/ribbon.bkl,../../samples/richtext/richtext.bkl,../../samples/sashtest/sashtest.bkl,../../samples/scroll/scroll.bkl,../../samples/secretstore/secretstore.bkl,../../samples/shaped/shaped.bkl,../../samples/sockets/sockets.bkl,../../samples/sound/sound.bkl,../../samples/splash/splash.bkl,../../samples/splitter/splitter.bkl,../../samples/statbar/statbar.bkl,../../samples/stc/stctest.bkl,../../samples/svg/svgtest.bkl,../../samples/taborder/taborder.bkl,../../samples/taskbar/taskbar.bkl,../../samples/taskbarbutton/taskbarbutton.bkl,../../samples/text/text.bkl,../../samples/thread/thread.bkl,../../samples/toolbar/toolbar.bkl,../../samples/treectrl/treectrl.bkl,../../samples/treelist/treelist.bkl,../../samples/typetest/typetest.bkl,../../samples/uiaction/uiaction.bkl,../../samples/validate/validate.bkl,../../samples/vscroll/vscroll.bkl,../../samples/webrequest/webrequest.bkl,../../samples/webview/webview.bkl,../../samples/widgets/widgets.bkl,../../samples/wizard/wizard.bkl,../../samples/wrapsizer/wrapsizer.bkl,../../samples/xrc/xrcdemo.bkl,../../samples/xti/xti.bkl,../../tests/benchmarks/bench.bkl,../../tests/test.bkl,../../utils/emulator/src/emulator.bkl,../../utils/execmon/execmon.bkl,../../utils/helpview/src/helpview.bkl,../../utils/hhp2cached/hhp2cached.bkl,../../utils/ifacecheck/src/ifacecheck.bkl,../../utils/screenshotgen/src/screenshotgen.bkl,../../utils/wxrc/wxrc.bkl,wx.bkl] ###
+     COND_PLATFORM_WIN32_0="#"
+     if test "x$PLATFORM_WIN32" = "x0" ; then
+diff --git a/build/bakefiles/files.bkl b/build/bakefiles/files.bkl
+index ab4f770305..aca9fd5e92 100644
+--- a/build/bakefiles/files.bkl
++++ b/build/bakefiles/files.bkl
+@@ -2007,7 +2007,79 @@ IMPORTANT: please read docs/tech/tn0016.txt before modifying this file!
+     wx/x11/window.h
+ </set>
+ 
++<!-- ====================================================================== -->
++<!--                             wxWebAssembly                              -->
++<!-- ====================================================================== -->
+ 
++<set var="WASM_LOWLEVEL_SRC" hints="files">
++    src/generic/caret.cpp
++    src/generic/icon.cpp
++    src/generic/imaglist.cpp
++    src/generic/paletteg.cpp
++    src/generic/regiong.cpp
++    src/generic/textmeasure.cpp
++    src/wasm/app.cpp
++    src/wasm/bitmap.cpp
++    src/wasm/brush.cpp
++    src/wasm/clipbrd.cpp
++    src/wasm/colour.cpp
++    src/wasm/config.cpp
++    src/wasm/cursor.cpp
++    src/wasm/dataobj.cpp
++    src/wasm/dc.cpp
++    src/wasm/dcclient.cpp
++    src/wasm/dcmemory.cpp
++    src/wasm/dcscreen.cpp
++    src/wasm/display.cpp
++    src/wasm/dnd.cpp
++    src/wasm/evtloop.cpp
++    src/wasm/font.cpp
++    src/wasm/fontenum.cpp
++    src/wasm/fontutil.cpp
++    src/wasm/keyboard.cpp
++    src/wasm/mouse.cpp
++    src/wasm/nonownedwnd.cpp
++    src/wasm/pen.cpp
++    src/wasm/popupwin.cpp
++    src/wasm/region.cpp
++    src/wasm/settings.cpp
++    src/wasm/timer.cpp
++    src/wasm/toplevel.cpp
++    src/wasm/utils.cpp
++    src/wasm/window.cpp
++</set>
++<set var="WASM_LOWLEVEL_HDR" hints="files">
++    wx/generic/caret.h
++    wx/generic/icon.h
++    wx/generic/imaglist.h
++    wx/generic/paletteg.h
++    wx/generic/region.h
++    wx/wasm/app.h
++    wx/wasm/bitmap.h
++    wx/wasm/brush.h
++    wx/wasm/chkconf.h
++    wx/wasm/clipbrd.h
++    wx/wasm/colour.h
++    wx/wasm/config.h
++    wx/wasm/cursor.h
++    wx/wasm/dataform.h
++    wx/wasm/dataobj.h
++    wx/wasm/dataobj2.h
++    wx/wasm/dc.h
++    wx/wasm/dcclient.h
++    wx/wasm/dcmemory.h
++    wx/wasm/dcscreen.h
++    wx/wasm/dnd.h
++    wx/wasm/evtloop.h
++    wx/wasm/font.h
++    wx/wasm/nonownedwnd.h
++    wx/wasm/private.h
++    wx/wasm/pen.h
++    wx/wasm/popupwin.h
++    wx/wasm/region.h
++    wx/wasm/toplevel.h
++    wx/wasm/window.h
++</set>
+ 
+ <!-- ====================================================================== -->
+ <!--                                wxMSW                                   -->
+@@ -3537,6 +3609,7 @@ IMPORTANT: please read docs/tech/tn0016.txt before modifying this file!
+         <if cond="TOOLKIT=='OSX_IPHONE'">$(OSX_LOWLEVEL_SRC)</if>
+         <if cond="TOOLKIT=='X11'">$(X11_LOWLEVEL_SRC)</if>
+         <if cond="TOOLKIT=='DFB'">$(DFB_LOWLEVEL_SRC)</if>
++        <if cond="TOOLKIT=='WASM'">$(WASM_LOWLEVEL_SRC)</if>
+     </set>
+     <set var="LOWLEVEL_HDR" hints="files">
+         <if cond="TOOLKIT=='GTK' and TOOLKIT_VERSION=='4'">$(GTK_LOWLEVEL_HDR)</if>
+@@ -3549,6 +3622,7 @@ IMPORTANT: please read docs/tech/tn0016.txt before modifying this file!
+         <if cond="TOOLKIT=='OSX_IPHONE'">$(OSX_LOWLEVEL_HDR)</if>
+         <if cond="TOOLKIT=='X11'">$(X11_LOWLEVEL_HDR)</if>
+         <if cond="TOOLKIT=='DFB'">$(DFB_LOWLEVEL_HDR)</if>
++        <if cond="TOOLKIT=='WASM'">$(WASM_LOWLEVEL_HDR)</if>
+     </set>
+ 
+     <set var="PLATFORM_SRC" hints="files">
+diff --git a/build/bakefiles/wx.bkl b/build/bakefiles/wx.bkl
+index 8107a99d4a..5d30e4b290 100644
+--- a/build/bakefiles/wx.bkl
++++ b/build/bakefiles/wx.bkl
+@@ -96,7 +96,7 @@
+                 $(INSTALL_DIR) $(DESTDIR)$(BINDIR)
+                 $(INSTALL_DIR) $(DESTDIR)$(LIBDIR)/wx/config
+                 $(INSTALL_SCRIPT) lib/wx/config/$(TOOLCHAIN_FULLNAME) $(DESTDIR)$(LIBDIR)/wx/config
+-                (cd $(DESTDIR)$(BINDIR) &amp;&amp; rm -f wx-config &amp;&amp; $(LN_S) $(LIBDIR)/wx/config/$(TOOLCHAIN_FULLNAME) wx-config || cp -p $(DESTDIR)$(LIBDIR)/wx/config/$(TOOLCHAIN_FULLNAME) wx-config)
++                (cd $(DESTDIR)$(BINDIR) &amp;&amp; rm -f wx-config &amp;&amp; cp -p $(DESTDIR)$(LIBDIR)/wx/config/$(TOOLCHAIN_FULLNAME) wx-config)
+             </command>
+         </action>
+ 
+diff --git a/build/cmake/files.cmake b/build/cmake/files.cmake
+index 3b90eda592..74c0797dae 100644
+--- a/build/cmake/files.cmake
++++ b/build/cmake/files.cmake
+@@ -2268,6 +2268,77 @@ set(DFB_LOWLEVEL_HDR
+     wx/dfb/wrapdfb.h
+ )
+ 
++set(WASM_LOWLEVEL_SRC
++    src/generic/caret.cpp
++    src/generic/icon.cpp
++    src/generic/imaglist.cpp
++    src/generic/paletteg.cpp
++    src/generic/regiong.cpp
++    src/generic/textmeasure.cpp
++    src/wasm/app.cpp
++    src/wasm/bitmap.cpp
++    src/wasm/brush.cpp
++    src/wasm/clipbrd.cpp
++    src/wasm/colour.cpp
++    src/wasm/config.cpp
++    src/wasm/cursor.cpp
++    src/wasm/dataobj.cpp
++    src/wasm/dc.cpp
++    src/wasm/dcclient.cpp
++    src/wasm/dcmemory.cpp
++    src/wasm/dcscreen.cpp
++    src/wasm/display.cpp
++    src/wasm/dnd.cpp
++    src/wasm/evtloop.cpp
++    src/wasm/font.cpp
++    src/wasm/fontenum.cpp
++    src/wasm/fontutil.cpp
++    src/wasm/keyboard.cpp
++    src/wasm/mouse.cpp
++    src/wasm/nonownedwnd.cpp
++    src/wasm/pen.cpp
++    src/wasm/popupwin.cpp
++    src/wasm/region.cpp
++    src/wasm/settings.cpp
++    src/wasm/timer.cpp
++    src/wasm/toplevel.cpp
++    src/wasm/utils.cpp
++    src/wasm/window.cpp
++)
++
++set(WASM_LOWLEVEL_SRC
++    wx/generic/caret.h
++    wx/generic/icon.h
++    wx/generic/imaglist.h
++    wx/generic/paletteg.h
++    wx/generic/region.h
++    wx/wasm/app.h
++    wx/wasm/bitmap.h
++    wx/wasm/brush.h
++    wx/wasm/chkconf.h
++    wx/wasm/clipbrd.h
++    wx/wasm/colour.h
++    wx/wasm/config.h
++    wx/wasm/cursor.h
++    wx/wasm/dataform.h
++    wx/wasm/dataobj.h
++    wx/wasm/dataobj2.h
++    wx/wasm/dc.h
++    wx/wasm/dcclient.h
++    wx/wasm/dcmemory.h
++    wx/wasm/dcscreen.h
++    wx/wasm/dnd.h
++    wx/wasm/evtloop.h
++    wx/wasm/font.h
++    wx/wasm/nonownedwnd.h
++    wx/wasm/private.h
++    wx/wasm/pen.h
++    wx/wasm/popupwin.h
++    wx/wasm/region.h
++    wx/wasm/toplevel.h
++    wx/wasm/window.h
++)
++
+ set(OSX_LOWLEVEL_SRC
+     # Shared wxMac and wxCocoa files
+     #TODO:     <if cond="PLATFORM_MACOSX=='1'">
+diff --git a/build/cmake/setup.cmake b/build/cmake/setup.cmake
+index 45097e02d9..79a6926156 100644
+--- a/build/cmake/setup.cmake
++++ b/build/cmake/setup.cmake
+@@ -668,7 +668,7 @@ endforeach()
+ check_type_size("long long" SIZEOF_LONG_LONG)
+ check_type_size(ssize_t SSIZE_T)
+ 
+-test_big_endian(WORDS_BIGENDIAN)
++#test_big_endian(WORDS_BIGENDIAN)
+ 
+ configure_file(build/cmake/setup.h.in ${wxSETUP_HEADER_FILE})
+ if(DEFINED wxSETUP_HEADER_FILE_DEBUG)
+diff --git a/build/cmake/setup.h.in b/build/cmake/setup.h.in
+index 910ab84305..fe71a991ff 100644
+--- a/build/cmake/setup.h.in
++++ b/build/cmake/setup.h.in
+@@ -645,6 +645,7 @@
+ #cmakedefine01 wxUSE_THEME_GTK
+ #cmakedefine01 wxUSE_THEME_METAL
+ #cmakedefine01 wxUSE_THEME_MONO
++#cmakedefine01 wxUSE_THEME_WASM
+ #cmakedefine01 wxUSE_THEME_WIN32
+ 
+ /* --- end common options --- */
+diff --git a/build/cmake/toolkit.cmake b/build/cmake/toolkit.cmake
+index bcbbd75491..f9cfce90e0 100644
+--- a/build/cmake/toolkit.cmake
++++ b/build/cmake/toolkit.cmake
+@@ -30,6 +30,10 @@ elseif(APPLE)
+     set(wxDEFAULT_TOOLKIT osx_cocoa)
+     set(wxTOOLKIT_OPTIONS osx_cocoa gtk2 gtk3 gtk4 qt)
+     set(wxPLATFORM OSX)
++elseif(EMSCRIPTEN)
++    set(wxDEFAULT_TOOLKIT wasm)
++    set(wxTOOLKIT_OPTIONS wasm)
++    set(wxPLATFORM EMSCRIPTEN)
+ elseif(UNIX)
+     set(wxDEFAULT_TOOLKIT gtk3)
+     set(wxTOOLKIT_OPTIONS gtk2 gtk3 gtk4 motif qt)
+@@ -118,7 +122,7 @@ endif()
+ # We need X11 for non-GTK Unix ports (X11, Motif) and for GTK with X11
+ # support, but not for Wayland-only GTK (which is why we have to do this after
+ # find_package(GTKx) above, as this is what sets wxHAVE_GDK_X11).
+-if(UNIX AND NOT APPLE AND NOT WIN32 AND (WXX11 OR WXMOTIF OR (WXGTK AND wxHAVE_GDK_X11)))
++if(UNIX AND NOT APPLE AND NOT WIN32 AND NOT EMSCRIPTEN AND (WXX11 OR WXMOTIF OR (WXGTK AND wxHAVE_GDK_X11)))
+     find_package(X11 REQUIRED)
+     list(APPEND wxTOOLKIT_INCLUDE_DIRS ${X11_INCLUDE_DIR})
+     list(APPEND wxTOOLKIT_LIBRARIES ${X11_LIBRARIES})
+diff --git a/build/files b/build/files
+index 5c68b80c8d..ec38252d82 100644
+--- a/build/files
++++ b/build/files
+@@ -2558,6 +2558,77 @@ OSX_IPHONE_HDR =
+     wx/osx/iphone/private.h
+     wx/osx/sound.h
+ 
++# wxWebAssembly
++
++WASM_LOWLEVEL_HDR =
++    wx/generic/caret.h
++    wx/generic/icon.h
++    wx/generic/imaglist.h
++    wx/generic/paletteg.h
++    wx/generic/region.h
++    wx/wasm/app.h
++    wx/wasm/bitmap.h
++    wx/wasm/brush.h
++    wx/wasm/chkconf.h
++    wx/wasm/clipbrd.h
++    wx/wasm/colour.h
++    wx/wasm/config.h
++    wx/wasm/cursor.h
++    wx/wasm/dataform.h
++    wx/wasm/dataobj.h
++    wx/wasm/dataobj2.h
++    wx/wasm/dc.h
++    wx/wasm/dcclient.h
++    wx/wasm/dcmemory.h
++    wx/wasm/dcscreen.h
++    wx/wasm/dnd.h
++    wx/wasm/evtloop.h
++    wx/wasm/font.h
++    wx/wasm/nonownedwnd.h
++    wx/wasm/private.h
++    wx/wasm/pen.h
++    wx/wasm/popupwin.h
++    wx/wasm/region.h
++    wx/wasm/toplevel.h
++    wx/wasm/window.h
++
++WASM_LOWLEVEL_SRC =
++     src/generic/caret.cpp
++     src/generic/icon.cpp
++     src/generic/imaglist.cpp
++     src/generic/paletteg.cpp
++     src/generic/regiong.cpp
++     src/generic/textmeasure.cpp
++     src/wasm/app.cpp
++     src/wasm/bitmap.cpp
++     src/wasm/brush.cpp
++     src/wasm/clipbrd.cpp
++     src/wasm/colour.cpp
++     src/wasm/config.cpp
++     src/wasm/cursor.cpp
++     src/wasm/dataobj.cpp
++     src/wasm/dc.cpp
++     src/wasm/dcclient.cpp
++     src/wasm/dcmemory.cpp
++     src/wasm/dcscreen.cpp
++     src/wasm/display.cpp
++     src/wasm/dnd.cpp
++     src/wasm/evtloop.cpp
++     src/wasm/font.cpp
++     src/wasm/fontenum.cpp
++     src/wasm/fontutil.cpp
++     src/wasm/keyboard.cpp
++     src/wasm/mouse.cpp
++     src/wasm/nonownedwnd.cpp
++     src/wasm/pen.cpp
++     src/wasm/popupwin.cpp
++     src/wasm/region.cpp
++     src/wasm/settings.cpp
++     src/wasm/timer.cpp
++     src/wasm/toplevel.cpp
++     src/wasm/utils.cpp
++     src/wasm/window.cpp
++
+ # wxUniversal
+ 
+ UNIV_THEMES_SRC =
+diff --git a/configure.in b/configure.in
+index c8b4eaeda5..924d2cd6fe 100644
+--- a/configure.in
++++ b/configure.in
+@@ -77,6 +77,7 @@ USE_WIN32=0
+ USE_DOS=0
+ USE_BEOS=0
+ USE_MAC=0
++USE_WASM=0
+ 
+ dnl Unix kind
+ USE_AIX=
+@@ -111,7 +112,7 @@ NEEDS_D_REENTRANT_FOR_R_FUNCS=0
+ dnl the list of all available toolkits
+ dnl
+ dnl update NUM_TOOLKITS calculation below when adding a new toolkit here!
+-ALL_TOOLKITS="GTK OSX_COCOA OSX_IPHONE MOTIF MSW X11 DFB QT"
++ALL_TOOLKITS="GTK OSX_COCOA OSX_IPHONE MOTIF MSW X11 DFB QT WASM"
+ 
+ dnl NB: these wxUSE_XXX constants have value of 0 or 1 unlike all the other ones
+ dnl     which are either yes or no
+@@ -123,6 +124,7 @@ DEFAULT_wxUSE_MSW=0
+ DEFAULT_wxUSE_X11=0
+ DEFAULT_wxUSE_DFB=0
+ DEFAULT_wxUSE_QT=0
++DEFAULT_wxUSE_WASM=0
+ 
+ dnl these are the values which are really default for the given platform:
+ dnl they're used if no --with-<toolkit> options were given to detect the
+@@ -135,6 +137,7 @@ DEFAULT_DEFAULT_wxUSE_MSW=0
+ DEFAULT_DEFAULT_wxUSE_X11=0
+ DEFAULT_DEFAULT_wxUSE_DFB=0
+ DEFAULT_DEFAULT_wxUSE_QT=0
++DEFAULT_DEFAULT_wxUSE_WASM=0
+ 
+ PROGRAM_EXT=
+ SAMPLES_CXXFLAGS=
+@@ -304,6 +307,13 @@ case "${host}" in
+     DEFAULT_DEFAULT_wxUSE_QT=1
+   ;;
+ 
++  *-*-emscripten* )
++    USE_WASM=1
++    AC_DEFINE(__WASM__)
++    DEFAULT_DEFAULT_wxUSE_WASM=1
++    PROGRAM_EXT=".js"
++  ;;
++
+   *)
+     AC_MSG_WARN([*** System type ${host} is unknown, assuming generic Unix and continuing nevertheless.])
+     AC_MSG_WARN([*** Please report the build results to wx-dev@googlegroups.com.])
+@@ -442,6 +452,7 @@ WX_ARG_ONLY_WITH(msw,           [  --with-msw              use MS-Windows], [wxU
+ WX_ARG_ONLY_WITH(directfb,      [  --with-directfb         use DirectFB], [wxUSE_DFB="$withval" wxUSE_UNIVERSAL="yes" CACHE_DFB=1 TOOLKIT_GIVEN=1])
+ WX_ARG_ONLY_WITH(x11,           [  --with-x11              use X11], [wxUSE_X11="$withval" wxUSE_UNIVERSAL="yes" CACHE_X11=1 TOOLKIT_GIVEN=1])
+ WX_ARG_ONLY_WITH(qt,            [  --with-qt               use Qt], [wxUSE_QT="$withval" CACHE_QT=1 TOOLKIT_GIVEN=1])
++WX_ARG_ONLY_WITH(wasm,          [  --with-wasm             use WebAssembly], [wxUSE_WASM="$withval" CACHE_WASM=1 TOOLKIT_GIVEN=1])
+ WX_ARG_ENABLE(nanox,       [  --enable-nanox          use NanoX], wxUSE_NANOX)
+ WX_ARG_ENABLE(gpe,         [  --enable-gpe            use GNOME PDA Environment features if possible], wxUSE_GPE)
+ 
+@@ -497,7 +508,7 @@ if test "$wxUSE_GUI" = "yes"; then
+     NUM_TOOLKITS=`expr ${wxUSE_GTK:-0} \
+                   + ${wxUSE_OSX_COCOA:-0} + ${wxUSE_OSX_IPHONE:-0} + ${wxUSE_DFB:-0} \
+                   + ${wxUSE_MOTIF:-0} + ${wxUSE_MSW:-0} \
+-                  + ${wxUSE_X11:-0} + ${wxUSE_QT:-0}`
++                  + ${wxUSE_X11:-0} + ${wxUSE_QT:-0} + ${wxUSE_WASM:-0}`
+ 
+ 
+     case "$NUM_TOOLKITS" in
+@@ -3632,6 +3643,13 @@ libraries returned by 'pkg-config gtk+-2.0 --libs' or 'gtk-config
+             )
+         fi
+     fi
++
++    if test "$wxUSE_WASM" = 1; then
++        TOOLKIT=WASM
++        GUI_TK_LIBRARY="-lpng"
++        LIBS="$LIBS -lz -lpthread"
++    fi
++
+     dnl the name of the directory where the files for this toolkit live
+     TOOLKIT_DIR=`echo ${TOOLKIT} | tr '[[A-Z]]' '[[a-z]]'`
+ 

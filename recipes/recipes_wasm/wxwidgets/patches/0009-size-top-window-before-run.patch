@@ -1,0 +1,54 @@
+diff --git a/src/wasm/evtloop.cpp b/src/wasm/evtloop.cpp
+index 388b88e41b..777db1da31 100644
+--- a/src/wasm/evtloop.cpp
++++ b/src/wasm/evtloop.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "wx/app.h"
+ #include "wx/evtloop.h"
++#include "wx/toplevel.h"
+ 
+ #include <emscripten.h>
+ 
+@@ -85,6 +86,20 @@ int wxGUIEventLoop::DoRun()
+ {
+     wxASSERT_MSG(IsOk(), wxT("invalid event loop"));
+ 
++    if (!wxTopLevelWindows.empty())
++    {
++        wxWindow *topWindow = wxTopLevelWindows.front();
++
++        int width = EM_ASM_INT({
++            return window.innerWidth;
++        });
++        int height = EM_ASM_INT({
++            return window.innerHeight - mainWindow.offsetTop;
++        });
++        topWindow->SetSize(0, 0, width, height);
++        topWindow->Refresh();
++    }
++
+     // Simulates an infinite loop by throwing an exception to prevent
+     // execution from continuing after this function call.
+     //
+diff --git a/src/wasm/nonownedwnd.cpp b/src/wasm/nonownedwnd.cpp
+index cb61ad7ddb..b4bf41e89a 100644
+--- a/src/wasm/nonownedwnd.cpp
++++ b/src/wasm/nonownedwnd.cpp
+@@ -58,16 +58,6 @@ bool wxNonOwnedWindow::Create(wxWindow *parent,
+     int width = WidthDefault(size.x);
+     int height = HeightDefault(size.y);
+ 
+-    if (wxTopLevelWindows.IsEmpty())
+-    {
+-        width = EM_ASM_INT({
+-            return window.innerWidth;
+-        });
+-        height = EM_ASM_INT({
+-            return window.innerHeight - mainWindow.offsetTop;
+-        });
+-    }
+-
+     if (!wxNonOwnedWindowBase::Create(parent, id, wxPoint(x, y), wxSize(width, height), style, name))
+     {
+         wxFAIL_MSG(wxT("wxTopLevelWindowWasm creation failed"));

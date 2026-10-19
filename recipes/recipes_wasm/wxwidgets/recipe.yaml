@@ -1,0 +1,99 @@
+context:
+  name: wxwidgets
+  version: 3.1.5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/wxWidgets/wxWidgets/releases/download/v${{ version }}/wxWidgets-${{ version }}.tar.bz2
+  sha256: d7b3666de33aa5c10ea41bb9405c40326e1aeb74ee725bb88f90f1d50270a224
+  patches:
+  - patches/0001-add-wasm-toolkit-headers.patch
+  - patches/0002-add-wasm-toolkit-sources.patch
+  - patches/0003-add-wasm-universal-theme.patch
+  - patches/0004-adapt-wxuniversal-widgets-for-wasm.patch
+  - patches/0005-add-wasm-browser-runtime-shell.patch
+  - patches/0006-integrate-wasm-toolkit-in-build-system.patch
+  - patches/0007-regenerate-configure-and-makefile-for-wasm.patch
+  - patches/0008-fix-mouse-window-crash.patch
+  - patches/0009-size-top-window-before-run.patch
+  - patches/0010-support-font-size-in-pixels.patch
+  - patches/0011-translate-touch-events-to-mouse-events.patch
+  - patches/0012-suppress-locale-warnings.patch
+  - patches/0013-do-not-link-host-libraries-for-wasm-toolkit.patch
+  - patches/0014-fix-cross-compilation-detection-in-wx-config.patch
+  - patches/0015-implement-wxFindWindowAtPointer-for-wasm.patch
+  - patches/0016-define-showError-in-wasm-shell-template.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - make
+  host:
+  - libpng-static
+  - libzlib-static
+  - libjpeg-turbo-static
+  - libexpat-static
+  - libexpat-dev
+  run:
+  - ${{ pin_compatible('libpng-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libzlib-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libjpeg-turbo-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libexpat-static', lower_bound='x.x', upper_bound='x.x') }}
+  run_exports:
+  - ${{ pin_subpackage('wxwidgets', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - bin/wx-config
+    - include/wx-3.1/wx/wx.h
+    - lib/libwx_baseu-3.1-wasm32-unknown-emscripten.a
+    - lib/libwx_wasmunivu_core-3.1-wasm32-unknown-emscripten.a
+    - lib/libwx_wasmunivu_html-3.1-wasm32-unknown-emscripten.a
+    - share/wx/wasm/wx.js
+    - share/wx/wasm/template.html
+- script: bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - nodejs
+    - playwright
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://www.wxwidgets.org/
+  repository: https://github.com/wxWidgets/wxWidgets
+  license: LGPL-2.0-or-later WITH WxWindows-exception-3.1
+  license_family: LGPL
+  license_file:
+  - docs/licence.txt
+  - docs/lgpl.txt
+  summary: wxWidgets cross-platform C++ GUI toolkit with a WebAssembly/browser port
+  description: |
+    wxWidgets 3.1.5 with the Wasm backend (from inxware/wxWidgets-wasm,
+    carried as recipe patches), built as static libraries for Emscripten.
+    Applications compiled against wx-config render their wxUniversal UI into
+    a browser canvas through the bundled wx.js / template.html runtime shell
+    in share/wx/wasm/.
+    Core wxWidgets is under the wxWindows Library Licence 3.1; the Wasm port
+    sources under src/wasm/ are additionally released under LGPL v2 (see
+    docs/lgpl.txt).
+
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: false
+  recipe-maintainers:
+  - Copilot

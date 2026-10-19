@@ -1,0 +1,11 @@
+--- a/wx-config.in
++++ b/wx-config.in
+@@ -398,7 +398,7 @@
+ }
+ 
+ # Returns true if this script is for a cross compiled config.
+-is_cross()  { [ "x@cross_compiling@" = "xyes" ]; }
++is_cross()  { [ "x@host_alias@" != "x" ]; }
+ 
+ 
+ # Determine the base directories we require.

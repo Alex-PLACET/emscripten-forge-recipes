@@ -1,0 +1,27 @@
+diff --git a/src/common/intl.cpp b/src/common/intl.cpp
+index 8f66074c53..fdafdeba2e 100644
+--- a/src/common/intl.cpp
++++ b/src/common/intl.cpp
+@@ -366,7 +366,9 @@ bool wxLocale::DoCommonPostInit(bool success,
+ {
+     if ( !success )
+     {
++#ifndef __WXWASM__
+         wxLogWarning(_("Cannot set locale to language \"%s\"."), name);
++#endif
+ 
+         // As we failed to change locale, there is no need to restore the
+         // previous one: it's still valid.
+diff --git a/src/common/wxcrt.cpp b/src/common/wxcrt.cpp
+index 8437ce6ff6..0c0f327c35 100644
+--- a/src/common/wxcrt.cpp
++++ b/src/common/wxcrt.cpp
+@@ -143,6 +143,8 @@ char* wxSetlocale(int category, const char *locale)
+     }
+     else
+         rv = setlocale(category, locale);
++#elif __WXWASM__
++    char *rv = NULL;
+ #else
+     char *rv = setlocale(category, locale);
+ #endif

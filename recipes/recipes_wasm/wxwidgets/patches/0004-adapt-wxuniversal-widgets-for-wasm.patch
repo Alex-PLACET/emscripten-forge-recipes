@@ -1,0 +1,4022 @@
+diff --git a/build/aclocal/bakefile.m4 b/build/aclocal/bakefile.m4
+index b172d39c18..3a756ed016 100644
+--- a/build/aclocal/bakefile.m4
++++ b/build/aclocal/bakefile.m4
+@@ -390,7 +390,8 @@ AC_DEFUN([AC_BAKEFILE_SHARED_LD],
+       *-*-sunos4* | \
+       *-*-osf* | \
+       *-*-dgux5* | \
+-      *-*-sysv5* )
++      *-*-sysv5* | \
++      *-*-emscripten)
+         dnl defaults are ok
+       ;;
+ 
+diff --git a/demos/bombs/bombs.cpp b/demos/bombs/bombs.cpp
+index 1ce2ce315b..bedc40298e 100644
+--- a/demos/bombs/bombs.cpp
++++ b/demos/bombs/bombs.cpp
+@@ -113,6 +113,7 @@ void BombsFrame::NewGame(int level, bool query)
+ {
+     if(query)
+     {
++/*
+        int ok = wxMessageBox(
+                   wxT("Start new game regardless previous board?"),
+                   wxT("Confirm"),
+@@ -120,6 +121,7 @@ void BombsFrame::NewGame(int level, bool query)
+                   this
+                 );
+        if(ok!=wxYES)return;
++*/
+     }
+ 
+     int numHorzCells = 20, numVertCells = 20;
+@@ -189,6 +191,7 @@ void BombsFrame::OnEasyCorner(wxCommandEvent& WXUNUSED(event))
+ 
+     msg = wxT("Do you really want to ") + msg + wxT(" having\ntop left corner always empty for easier start?");
+ 
++/*
+     int ok = wxMessageBox(
+                msg,
+                wxT("Confirm"),
+@@ -197,6 +200,7 @@ void BombsFrame::OnEasyCorner(wxCommandEvent& WXUNUSED(event))
+              );
+ 
+     if(ok!=wxYES)return;
++*/
+ 
+     m_easyCorner = !m_easyCorner;
+ 
+@@ -225,8 +229,8 @@ BombsCanvas::BombsCanvas(wxFrame *parent, BombsGame *game)
+ 
+     dc.SetMapMode(wxMM_METRIC);
+ 
+-    int xcm = dc.LogicalToDeviceX(10);
+-    int ycm = dc.LogicalToDeviceY(10);
++    int xcm = dc.LogicalToDeviceXRel(10);
++    int ycm = dc.LogicalToDeviceYRel(10);
+     // To have a square cell, there must be :
+     //    sx*ycm == sy*xcm
+     if (chw*ycm < chh*xcm)
+diff --git a/demos/forty/canvas.cpp b/demos/forty/canvas.cpp
+index 257d244370..2180e50755 100644
+--- a/demos/forty/canvas.cpp
++++ b/demos/forty/canvas.cpp
+@@ -57,6 +57,7 @@ FortyCanvas::FortyCanvas(wxWindow* parent, const wxPoint& pos, const wxSize& siz
+ 
+ FortyCanvas::~FortyCanvas()
+ {
++    printf("destroy\n");
+     UpdateScores();
+     delete m_game;
+     delete m_scoreFile;
+@@ -84,6 +85,7 @@ void FortyCanvas::UpdateScores()
+ 
+ void FortyCanvas::OnDraw(wxDC& dc)
+ {
++    printf("OnDraw\n");
+     dc.SetFont(* m_font);
+     m_game->Redraw(dc);
+ #if 0
+@@ -150,12 +152,14 @@ Called when the main frame is closed
+ */
+ bool FortyCanvas::OnCloseCanvas()
+ {
++/*
+     if (m_game->InPlay() &&
+         wxMessageBox(wxT("Are you sure you want to\nabandon the current game?"),
+             wxT("Warning"), wxYES_NO | wxICON_QUESTION) == wxNO)
+     {
+         return false;
+     }
++*/
+     return true;
+ }
+ 
+diff --git a/demos/forty/forty.cpp b/demos/forty/forty.cpp
+index bd6f92b5b0..630da45693 100644
+--- a/demos/forty/forty.cpp
++++ b/demos/forty/forty.cpp
+@@ -89,7 +89,7 @@ bool FortyApp::OnInit()
+      // Show the frame
+     frame->Show(true);
+ 
+-    frame->GetCanvas()->ShowPlayerDialog();
++    //frame->GetCanvas()->ShowPlayerDialog();
+ 
+     return true;
+ }
+diff --git a/demos/forty/game.cpp b/demos/forty/game.cpp
+index 304c385932..736d2e0369 100644
+--- a/demos/forty/game.cpp
++++ b/demos/forty/game.cpp
+@@ -193,17 +193,21 @@ void Game::DoMove(wxDC& dc, Pile* src, Pile* dest)
+         // Redraw the score box to update games won
+         DisplayScore(dc);
+ 
++/*
+         if (wxMessageBox(wxT("Do you wish to play again?"),
+             wxT("Well Done, You have won!"), wxYES_NO | wxICON_QUESTION) == wxYES)
++*/
+         {
+             Deal();
+             canvas->Refresh();
+         }
++/*
+         else
+         {
+             // user cancelled the dialog - exit the app
+             ((wxFrame*)canvas->GetParent())->Close(true);
+         }
++*/
+     }
+ }
+ 
+diff --git a/demos/forty/scorefil.cpp b/demos/forty/scorefil.cpp
+index bee41b4641..6b844a6e19 100644
+--- a/demos/forty/scorefil.cpp
++++ b/demos/forty/scorefil.cpp
+@@ -36,6 +36,7 @@ ScoreFile::~ScoreFile()
+ void ScoreFile::GetPlayerList( wxArrayString &list )
+ {
+     m_config->SetPath(wxT("/Players"));
++/*
+     int length = m_config->GetNumberOfGroups();
+ 
+     if (length <= 0) return;
+@@ -50,6 +51,7 @@ void ScoreFile::GetPlayerList( wxArrayString &list )
+               list.Add( player );
+         }
+     }
++*/
+ }
+ 
+ 
+diff --git a/demos/life/life.cpp b/demos/life/life.cpp
+index 3fff7162e8..4ab8981ca9 100644
+--- a/demos/life/life.cpp
++++ b/demos/life/life.cpp
+@@ -35,7 +35,7 @@
+ // resources
+ // --------------------------------------------------------------------------
+ 
+-#if defined(__WXGTK__) || defined(__WXMOTIF__) || defined(__WXMAC__) || defined(__WXMGL__) || defined(__WXX11__) || defined(__WXQT__)
++#if defined(__WXGTK__) || defined(__WXMOTIF__) || defined(__WXMAC__) || defined(__WXMGL__) || defined(__WXX11__) || defined(__WXQT__) || defined(__WXWASM__)
+     // application icon
+     #include "mondrian.xpm"
+ 
+diff --git a/docs/doxygen/mainpages/const_wxusedef.h b/docs/doxygen/mainpages/const_wxusedef.h
+index b1ce1bd077..344a4f6eed 100644
+--- a/docs/doxygen/mainpages/const_wxusedef.h
++++ b/docs/doxygen/mainpages/const_wxusedef.h
+@@ -365,6 +365,7 @@ wxWidgets 3.1.3).}
+ @itemdef{wxUSE_THEME_GTK, Use GTK+ 1-like theme in wxUniversal}
+ @itemdef{wxUSE_THEME_METAL, Use GTK+ 2-like theme in wxUniversal}
+ @itemdef{wxUSE_THEME_MONO, Use simple monochrome theme in wxUniversal}
++@itemdef{wxUSE_THEME_WASM, Use WASM theme in wxUniversal}
+ @itemdef{wxUSE_THEME_WIN32, Use Win32-like theme in wxUniversal}
+ @endDefList
+ 
+diff --git a/docs/licence.txt b/docs/licence.txt
+index 0a25857e6c..34269f1e15 100644
+--- a/docs/licence.txt
++++ b/docs/licence.txt
+@@ -23,31 +23,3 @@
+   along with this software, usually in a file named COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301 USA.
+-
+-  EXCEPTION NOTICE
+-
+-  1. As a special exception, the copyright holders of this library give
+-  permission for additional uses of the text contained in this release of
+-  the library as licenced under the wxWindows Library Licence, applying
+-  either version 3.1 of the Licence, or (at your option) any later version of
+-  the Licence as published by the copyright holders of version
+-  3.1 of the Licence document.
+-
+-  2. The exception is that you may use, copy, link, modify and distribute
+-  under your own terms, binary object code versions of works based
+-  on the Library.
+-
+-  3. If you copy code from files distributed under the terms of the GNU
+-  General Public Licence or the GNU Library General Public Licence into a
+-  copy of this library, as this licence permits, the exception does not
+-  apply to the code that you add in this way.  To avoid misleading anyone as
+-  to the status of such modified files, you must delete this exception
+-  notice from such code and/or adjust the licensing conditions notice
+-  accordingly.
+-
+-  4. If you write modifications of your own for this library, it is your
+-  choice whether to permit this exception to apply to your modifications.
+-  If you do not wish that, you must delete the exception notice from such
+-  code and/or adjust the licensing conditions notice accordingly.
+-
+-
+diff --git a/include/wx/accel.h b/include/wx/accel.h
+index c1f78d58ed..bae15c2a62 100644
+--- a/include/wx/accel.h
++++ b/include/wx/accel.h
+@@ -152,6 +152,8 @@ private:
+     #include "wx/osx/accel.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/accel.h"
++#elif defined(__WXWASM__)
++    #include "wx/generic/accel.h"
+ #endif
+ 
+ extern WXDLLIMPEXP_DATA_CORE(wxAcceleratorTable) wxNullAcceleratorTable;
+diff --git a/include/wx/android/setup.h b/include/wx/android/setup.h
+index 3fd3ce552b..d4154b3f72 100644
+--- a/include/wx/android/setup.h
++++ b/include/wx/android/setup.h
+@@ -1607,6 +1607,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+ /* --- end common options --- */
+@@ -1756,6 +1757,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ /* --- end wxUniv options --- */
+ 
+diff --git a/include/wx/app.h b/include/wx/app.h
+index 45e35ef7d3..b948d92916 100644
+--- a/include/wx/app.h
++++ b/include/wx/app.h
+@@ -739,6 +739,8 @@ protected:
+     #include "wx/osx/app.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/app.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/app.h"
+ #endif
+ 
+ #else // !GUI
+diff --git a/include/wx/bitmap.h b/include/wx/bitmap.h
+index adb95b9c50..64db28d389 100644
+--- a/include/wx/bitmap.h
++++ b/include/wx/bitmap.h
+@@ -73,7 +73,8 @@ protected:
+     defined(__WXGTK__) || \
+     defined(__WXMOTIF__) || \
+     defined(__WXX11__) || \
+-    defined(__WXQT__)
++    defined(__WXQT__) || \
++    defined(__WXWASM__)
+     #define wxUSE_BITMAP_BASE 1
+ #else
+     #define wxUSE_BITMAP_BASE 0
+@@ -293,6 +294,9 @@ protected:
+ #elif defined(__WXQT__)
+     #define wxBITMAP_DEFAULT_TYPE    wxBITMAP_TYPE_XPM
+     #include "wx/qt/bitmap.h"
++#elif defined(__WXWASM__)
++    #define wxBITMAP_DEFAULT_TYPE    wxBITMAP_TYPE_XPM
++    #include "wx/wasm/bitmap.h"
+ #endif
+ 
+ #if wxUSE_IMAGE
+diff --git a/include/wx/brush.h b/include/wx/brush.h
+index 1ca1f1ff09..9805daaf0e 100644
+--- a/include/wx/brush.h
++++ b/include/wx/brush.h
+@@ -83,6 +83,8 @@ public:
+     #include "wx/osx/brush.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/brush.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/brush.h"
+ #endif
+ 
+ class WXDLLIMPEXP_CORE wxBrushList: public wxGDIObjListBase
+diff --git a/include/wx/chkconf.h b/include/wx/chkconf.h
+index 4fa7561b9c..ce57f3c8ff 100644
+--- a/include/wx/chkconf.h
++++ b/include/wx/chkconf.h
+@@ -1302,6 +1302,8 @@
+ #  include "wx/x11/chkconf.h"
+ #elif defined(__WXANDROID__)
+ #  include "wx/android/chkconf.h"
++#elif defined(__WXWASM__)
++#  include "wx/wasm/chkconf.h"
+ #endif
+ 
+ /*
+diff --git a/include/wx/clipbrd.h b/include/wx/clipbrd.h
+index 2c37937c58..7494378090 100644
+--- a/include/wx/clipbrd.h
++++ b/include/wx/clipbrd.h
+@@ -163,6 +163,8 @@ typedef void (wxEvtHandler::*wxClipboardEventFunction)(wxClipboardEvent&);
+     #include "wx/osx/clipbrd.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/clipbrd.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/clipbrd.h"
+ #endif
+ 
+ // ----------------------------------------------------------------------------
+diff --git a/include/wx/colour.h b/include/wx/colour.h
+index 4e9e0a1854..75232a72ed 100644
+--- a/include/wx/colour.h
++++ b/include/wx/colour.h
+@@ -234,6 +234,8 @@ WXDLLIMPEXP_CORE bool wxFromString(const wxString& str, wxColourBase* col);
+     #include "wx/osx/colour.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/colour.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/colour.h"
+ #endif
+ 
+ #define wxColor wxColour
+diff --git a/include/wx/config.h b/include/wx/config.h
+index 2a28e0715a..f6361b09d1 100644
+--- a/include/wx/config.h
++++ b/include/wx/config.h
+@@ -24,6 +24,9 @@
+ #if defined(__WINDOWS__) && wxUSE_CONFIG_NATIVE
+     #include "wx/msw/regconf.h"
+     #define wxConfig  wxRegConfig
++#elif defined(__WXWASM__) && wxUSE_CONFIG_NATIVE
++    #include "wx/wasm/config.h"
++    #define wxConfig wxLocalStorageConfig
+ #else // either we're under Unix or wish to always use config files
+     #include "wx/fileconf.h"
+     #define wxConfig wxFileConfig
+diff --git a/include/wx/cursor.h b/include/wx/cursor.h
+index df0c57423e..9f23a0c4ef 100644
+--- a/include/wx/cursor.h
++++ b/include/wx/cursor.h
+@@ -70,6 +70,9 @@ public:
+ #elif defined(__WXQT__)
+     #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_CUR
+     #include "wx/qt/cursor.h"
++#elif defined(__WXWASM__)
++    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_XPM
++    #include "wx/wasm/cursor.h"
+ #endif
+ 
+ #include "wx/utils.h"
+diff --git a/include/wx/dataobj.h b/include/wx/dataobj.h
+index ef0c385df5..2a9c19b0b4 100644
+--- a/include/wx/dataobj.h
++++ b/include/wx/dataobj.h
+@@ -87,6 +87,8 @@ public:
+     #include "wx/osx/dataform.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/dataform.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/dataform.h"
+ #endif
+ 
+ // the value for default argument to some functions (corresponds to
+@@ -173,6 +175,8 @@ public:
+     #include "wx/osx/dataobj.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/dataobj.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/dataobj.h"
+ #endif
+ 
+ // ----------------------------------------------------------------------------
+@@ -585,6 +589,8 @@ private:
+         #include "wx/osx/dataobj2.h"
+     #elif defined(__WXQT__)
+         #include "wx/qt/dataobj2.h"
++    #elif defined(__WXWASM__)
++        #include "wx/wasm/dataobj2.h"
+     #endif
+ 
+     // wxURLDataObject is simply wxTextDataObject with a different name
+diff --git a/include/wx/dcbuffer.h b/include/wx/dcbuffer.h
+index 8fc23d66cd..f550ce0b13 100644
+--- a/include/wx/dcbuffer.h
++++ b/include/wx/dcbuffer.h
+@@ -17,7 +17,7 @@
+ 
+ // Split platforms into two groups - those which have well-working
+ // double-buffering by default, and those which do not.
+-#if defined(__WXMAC__) || defined(__WXGTK20__) || defined(__WXDFB__) || defined(__WXQT__)
++#if defined(__WXMAC__) || defined(__WXGTK20__) || defined(__WXDFB__) || defined(__WXQT__) || defined(__WXWASM__)
+     #define wxALWAYS_NATIVE_DOUBLE_BUFFER       1
+ #else
+     #define wxALWAYS_NATIVE_DOUBLE_BUFFER       0
+@@ -224,7 +224,8 @@ public:
+     wxAutoBufferedPaintDC(wxWindow* win)
+         : wxAutoBufferedPaintDCBase(win)
+     {
+-        wxASSERT_MSG( win->GetBackgroundStyle() == wxBG_STYLE_PAINT,
++        wxASSERT_MSG( win->GetBackgroundStyle() == wxBG_STYLE_PAINT ||
++                      win->GetBackgroundStyle() == wxBG_STYLE_TRANSPARENT,
+             "You need to call SetBackgroundStyle(wxBG_STYLE_PAINT) in ctor, "
+             "and also, if needed, paint the background in wxEVT_PAINT handler."
+         );
+diff --git a/include/wx/defs.h b/include/wx/defs.h
+index c4dd777540..52fac37fc9 100644
+--- a/include/wx/defs.h
++++ b/include/wx/defs.h
+@@ -57,6 +57,7 @@
+          !defined(__WXDFB__)   && \
+          !defined(__WXX11__)   && \
+          !defined(__WXQT__)    && \
++         !defined(__WXWASM__)
+           wxUSE_GUI
+ #       ifdef __UNIX__
+ #           error "No Target! You should use wx-config program for compilation flags!"
+@@ -2303,7 +2304,7 @@ enum wxKeyCode
+     WXK_WINDOWS_LEFT,
+     WXK_WINDOWS_RIGHT,
+     WXK_WINDOWS_MENU ,
+-#ifdef __WXOSX__
++#if defined(__WXOSX__)
+     WXK_RAW_CONTROL,
+ #else
+     WXK_RAW_CONTROL = WXK_CONTROL,
+@@ -2361,7 +2362,7 @@ enum wxKeyModifier
+     wxMOD_SHIFT     = 0x0004,
+     wxMOD_META      = 0x0008,
+     wxMOD_WIN       = wxMOD_META,
+-#if defined(__WXMAC__)
++#if defined(__WXMAC__) || defined(__WXWASM__)
+     wxMOD_RAW_CONTROL = 0x0010,
+ #else
+     wxMOD_RAW_CONTROL = wxMOD_CONTROL,
+@@ -3014,6 +3015,10 @@ typedef const void* WXWidget;
+ #include "wx/qt/defs.h"
+ #endif
+ 
++#ifdef __WXWASM__
++typedef const void *WXWidget;
++#endif /* __WXWASM__ */
++
+ /*  include the feature test macros */
+ #include "wx/features.h"
+ 
+diff --git a/include/wx/dialog.h b/include/wx/dialog.h
+index 55dc6d0fe2..26d958708d 100644
+--- a/include/wx/dialog.h
++++ b/include/wx/dialog.h
+@@ -69,6 +69,7 @@ public:
+ 
+     // define public wxDialog methods to be implemented by the derived classes
+     virtual int ShowModal() = 0;
++    virtual void ShowModal(std::function<void (int)> callback) = 0;
+     virtual void EndModal(int retCode) = 0;
+     virtual bool IsModal() const = 0;
+     // show the dialog frame-modally (needs a parent), using app-modal
+diff --git a/include/wx/dnd.h b/include/wx/dnd.h
+index c43083645b..c6b5daa319 100644
+--- a/include/wx/dnd.h
++++ b/include/wx/dnd.h
+@@ -224,6 +224,8 @@ protected:
+     #include "wx/osx/dnd.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/dnd.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/dnd.h"
+ #endif
+ 
+ // ----------------------------------------------------------------------------
+diff --git a/include/wx/dragimag.h b/include/wx/dragimag.h
+index 4f8bc6a717..a5901f19a9 100644
+--- a/include/wx/dragimag.h
++++ b/include/wx/dragimag.h
+@@ -45,6 +45,10 @@ class WXDLLIMPEXP_FWD_CORE wxDC;
+ #   include "wx/generic/dragimgg.h"
+ #   define wxDragImage wxGenericDragImage
+ 
++#elif defined(__WXWASM__)
++#   include "wx/generic/dragimgg.h"
++#   define wxDragImage wxGenericDragImage
++
+ #endif
+ 
+ #endif // wxUSE_DRAGIMAGE
+diff --git a/include/wx/encinfo.h b/include/wx/encinfo.h
+index 176da52e83..742362a28e 100644
+--- a/include/wx/encinfo.h
++++ b/include/wx/encinfo.h
+@@ -38,7 +38,8 @@ struct WXDLLIMPEXP_CORE wxNativeEncodingInfo
+ 
+ #if defined(__WXMSW__) || \
+     defined(__WXMAC__) || \
+-    defined(__WXQT__)
++    defined(__WXQT__) || \
++    defined(__WXWASM__)
+ 
+     wxNativeEncodingInfo()
+         : facename()
+diff --git a/include/wx/evtloop.h b/include/wx/evtloop.h
+index 223dee060c..59e22832d3 100644
+--- a/include/wx/evtloop.h
++++ b/include/wx/evtloop.h
+@@ -298,6 +298,8 @@ private:
+     #include "wx/gtk/evtloop.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/evtloop.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/evtloop.h"
+ #else // other platform
+ 
+ #include "wx/stopwatch.h"   // for wxMilliClock_t
+diff --git a/include/wx/features.h b/include/wx/features.h
+index 46ac758cd7..3e19109849 100644
+--- a/include/wx/features.h
++++ b/include/wx/features.h
+@@ -85,7 +85,7 @@
+ 
+ /* Direct access to bitmap data is not implemented in all ports yet */
+ #if defined(__WXGTK20__) || defined(__WXMAC__) || defined(__WXDFB__) || \
+-        defined(__WXMSW__) || defined(__WXQT__)
++        defined(__WXMSW__) || defined(__WXQT__) || defined(__WXWASM__)
+ 
+     /*
+        HP aCC for PA-RISC can't deal with templates in wx/rawbmp.h.
+diff --git a/include/wx/filefn.h b/include/wx/filefn.h
+index e975ee0022..cfea8ef3b7 100644
+--- a/include/wx/filefn.h
++++ b/include/wx/filefn.h
+@@ -643,7 +643,7 @@ WXDLLIMPEXP_BASE int wxParseCommonDialogsFilter(const wxString& wildCard, wxArra
+ // classes
+ // ----------------------------------------------------------------------------
+ 
+-#ifdef __UNIX__
++#if defined(__UNIX__) && !defined(__WXWASM__)
+ 
+ // set umask to the given value in ctor and reset it to the old one in dtor
+ class WXDLLIMPEXP_BASE wxUmaskChanger
+diff --git a/include/wx/font.h b/include/wx/font.h
+index 938e6aeaf1..325d767953 100644
+--- a/include/wx/font.h
++++ b/include/wx/font.h
+@@ -639,6 +639,8 @@ WXDLLIMPEXP_CORE bool wxFromString(const wxString& str, wxFontBase* font);
+     #include "wx/osx/font.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/font.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/font.h"
+ #endif
+ 
+ class WXDLLIMPEXP_CORE wxFontList: public wxGDIObjListBase
+diff --git a/include/wx/fontutil.h b/include/wx/fontutil.h
+index 09ad8c8ef3..df797e289c 100644
+--- a/include/wx/fontutil.h
++++ b/include/wx/fontutil.h
+@@ -218,6 +218,12 @@ public :
+     bool          strikethrough;
+     wxString      faceName;
+     wxFontEncoding encoding;
++
++#if defined(__WXWASM__)
++    mutable bool m_isRendered;
++    mutable wxString m_renderedString;
++#endif
++
+ #endif // platforms
+ 
+     // default ctor (default copy ctor is ok)
+diff --git a/include/wx/gdicmn.h b/include/wx/gdicmn.h
+index e29a77627c..5540b8ec18 100644
+--- a/include/wx/gdicmn.h
++++ b/include/wx/gdicmn.h
+@@ -137,7 +137,7 @@ enum wxStockCursor
+     wxCURSOR_BASED_ARROW_DOWN,
+ #endif // X11
+     wxCURSOR_ARROWWAIT,
+-#ifdef __WXMAC__
++#if defined(__WXMAC__) || defined(__WXWASM__)
+     wxCURSOR_OPEN_HAND,
+     wxCURSOR_CLOSED_HAND,
+ #endif
+@@ -149,7 +149,7 @@ enum wxStockCursor
+     #define wxCURSOR_DEFAULT        wxCURSOR_ARROW
+ #endif
+ 
+-#ifndef __WXMAC__
++#if !defined(__WXMAC__) && !defined(__WXWASM__)
+     // TODO CS supply openhand and closedhand cursors
+     #define wxCURSOR_OPEN_HAND      wxCURSOR_HAND
+     #define wxCURSOR_CLOSED_HAND    wxCURSOR_HAND
+@@ -218,6 +218,9 @@ enum wxEllipsizeMode
+ #elif defined(__WXQT__)
+     // Initialize from an included XPM
+     #define wxICON(X) wxIcon( X##_xpm )
++#elif defined(__WXWASM__)
++    // Initialize from an included XPM
++    #define wxICON(X) wxIcon( X##_xpm )
+ #else
+     // This will usually mean something on any platform
+     #define wxICON(X) wxIcon(wxT(#X))
+@@ -233,7 +236,8 @@ enum wxEllipsizeMode
+       defined(__WXMOTIF__) || \
+       defined(__WXX11__)   || \
+       defined(__WXMAC__)   || \
+-      defined(__WXDFB__)
++      defined(__WXDFB__)   || \
++      defined(__WXWASM__)
+     // Initialize from an included XPM
+     #define wxBITMAP(name) wxBitmap(name##_xpm)
+ #else // other platforms
+@@ -1090,6 +1094,9 @@ extern bool WXDLLIMPEXP_CORE wxColourDisplay();
+ extern int WXDLLIMPEXP_CORE wxDisplayDepth();
+ #define wxGetDisplayDepth wxDisplayDepth
+ 
++extern double wxDisplayScaleFactor();
++extern double wxContentScaleFactor();
++
+ // get the display size
+ extern void WXDLLIMPEXP_CORE wxDisplaySize(int *width, int *height);
+ extern wxSize WXDLLIMPEXP_CORE wxGetDisplaySize();
+diff --git a/include/wx/generic/combo.h b/include/wx/generic/combo.h
+index 3733b3215d..5aa1918e17 100644
+--- a/include/wx/generic/combo.h
++++ b/include/wx/generic/combo.h
+@@ -76,7 +76,7 @@ public:
+     // we have our own input handler and our own actions
+     virtual bool PerformAction(const wxControlAction& action,
+                                long numArg = 0l,
+-                               const wxString& strArg = wxEmptyString);
++                               const wxString& strArg = wxEmptyString) wxOVERRIDE;
+ #endif
+ 
+ protected:
+diff --git a/include/wx/generic/msgdlgg.h b/include/wx/generic/msgdlgg.h
+index e85744a3f6..7cb0d699d3 100644
+--- a/include/wx/generic/msgdlgg.h
++++ b/include/wx/generic/msgdlgg.h
+@@ -23,6 +23,7 @@ public:
+                            const wxPoint& pos = wxDefaultPosition);
+ 
+     virtual int ShowModal() wxOVERRIDE;
++    virtual void ShowModal(std::function<void (int)> callback) wxOVERRIDE;
+ 
+ protected:
+     // Creates a message dialog taking any options that have been set after
+diff --git a/include/wx/generic/private/listctrl.h b/include/wx/generic/private/listctrl.h
+index e0da92797f..59ffbb693d 100644
+--- a/include/wx/generic/private/listctrl.h
++++ b/include/wx/generic/private/listctrl.h
+@@ -890,7 +890,7 @@ protected:
+     // get the colour to be used for drawing the rules
+     wxColour GetRuleColour() const
+     {
+-        return wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT);
++        return wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+     }
+ 
+ private:
+diff --git a/include/wx/gtk/setup.h b/include/wx/gtk/setup.h
+index 6695285e4a..aedddc8b13 100644
+--- a/include/wx/gtk/setup.h
++++ b/include/wx/gtk/setup.h
+@@ -1608,6 +1608,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+ /* --- end common options --- */
+diff --git a/include/wx/icon.h b/include/wx/icon.h
+index 0849ab98b8..ac55f38fcd 100644
+--- a/include/wx/icon.h
++++ b/include/wx/icon.h
+@@ -56,6 +56,9 @@
+ #elif defined(__WXQT__)
+   #define wxICON_DEFAULT_TYPE   wxBITMAP_TYPE_XPM
+   #include "wx/generic/icon.h"
++#elif defined(__WXWASM__)
++  #define wxICON_DEFAULT_TYPE   wxBITMAP_TYPE_XPM
++  #include "wx/generic/icon.h"
+ #endif
+ 
+ //-----------------------------------------------------------------------------
+diff --git a/include/wx/init.h b/include/wx/init.h
+index ea542aea42..3d59811d9d 100644
+--- a/include/wx/init.h
++++ b/include/wx/init.h
+@@ -106,7 +106,7 @@ public:
+     operator bool() const { return m_ok; }
+ 
+     // dtor only does clean up if we initialized the library properly
+-    ~wxInitializer() { if ( m_ok ) wxUninitialize(); }
++    ~wxInitializer() { /*if ( m_ok ) wxUninitialize();*/ }
+ 
+ private:
+     bool m_ok;
+diff --git a/include/wx/kbdstate.h b/include/wx/kbdstate.h
+index 43444269cb..fa8b1ede4d 100644
+--- a/include/wx/kbdstate.h
++++ b/include/wx/kbdstate.h
+@@ -28,7 +28,7 @@ public:
+           m_shiftDown(shiftDown),
+           m_altDown(altDown),
+           m_metaDown(metaDown)
+-#ifdef __WXOSX__
++#if defined(__WXOSX__) || defined(__WXWASM__)
+           ,m_rawControlDown(false)
+ #endif
+     {
+@@ -48,7 +48,7 @@ public:
+         return (m_controlDown ? wxMOD_CONTROL : 0) |
+                (m_shiftDown ? wxMOD_SHIFT : 0) |
+                (m_metaDown ? wxMOD_META : 0) |
+-#ifdef __WXOSX__
++#if defined(__WXOSX__) || defined(__WXWASM__)
+                (m_rawControlDown ? wxMOD_RAW_CONTROL : 0) |
+ #endif
+                (m_altDown ? wxMOD_ALT : 0);
+@@ -68,7 +68,7 @@ public:
+     bool ControlDown() const { return m_controlDown; }
+     bool RawControlDown() const
+     {
+-#ifdef __WXOSX__
++#if defined(__WXOSX__) || defined(__WXWASM__)
+         return m_rawControlDown;
+ #else
+         return m_controlDown;
+@@ -94,7 +94,7 @@ public:
+     void SetControlDown(bool down) { m_controlDown = down; }
+     void SetRawControlDown(bool down)
+     {
+-#ifdef __WXOSX__
++#if defined(__WXOSX__) || defined(__WXWASM__)
+         m_rawControlDown = down;
+ #else
+         m_controlDown = down;
+@@ -113,7 +113,7 @@ public:
+     bool m_shiftDown       : 1;
+     bool m_altDown         : 1;
+     bool m_metaDown        : 1;
+-#ifdef __WXOSX__
++#if defined(__WXOSX__) || defined(__WXWASM__)
+     bool m_rawControlDown : 1;
+ #endif
+ };
+diff --git a/include/wx/motif/setup.h b/include/wx/motif/setup.h
+index cf4ee95016..b380ca3ea6 100644
+--- a/include/wx/motif/setup.h
++++ b/include/wx/motif/setup.h
+@@ -1608,6 +1608,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+ /* --- end common options --- */
+diff --git a/include/wx/msgdlg.h b/include/wx/msgdlg.h
+index 3606e0e416..1d498a701b 100644
+--- a/include/wx/msgdlg.h
++++ b/include/wx/msgdlg.h
+@@ -319,7 +319,8 @@ int WXDLLIMPEXP_CORE wxMessageBox(const wxString& message,
+                              const wxString& caption = wxASCII_STR(wxMessageBoxCaptionStr),
+                              long style = wxOK | wxCENTRE,
+                              wxWindow *parent = NULL,
+-                             int x = wxDefaultCoord, int y = wxDefaultCoord);
++                             int x = wxDefaultCoord, int y = wxDefaultCoord,
++                             std::function<void (int)> callback = NULL);
+ 
+ #endif // wxUSE_MSGDLG
+ 
+diff --git a/include/wx/msw/setup.h b/include/wx/msw/setup.h
+index 7b4494ce10..9ac187ef36 100644
+--- a/include/wx/msw/setup.h
++++ b/include/wx/msw/setup.h
+@@ -1608,6 +1608,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+ /* --- end common options --- */
+diff --git a/include/wx/nonownedwnd.h b/include/wx/nonownedwnd.h
+index d8bfca3684..47e030821a 100644
+--- a/include/wx/nonownedwnd.h
++++ b/include/wx/nonownedwnd.h
+@@ -104,6 +104,8 @@ protected:
+     #include "wx/msw/nonownedwnd.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/nonownedwnd.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/nonownedwnd.h"
+ #else
+     // No special class needed in other ports, they can derive both wxTLW and
+     // wxPopupWindow directly from wxWindow and don't implement SetShape().
+diff --git a/include/wx/osx/setup.h b/include/wx/osx/setup.h
+index 5d20b4e33d..e1ffb8a520 100644
+--- a/include/wx/osx/setup.h
++++ b/include/wx/osx/setup.h
+@@ -1614,6 +1614,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+ /* --- end common options --- */
+diff --git a/include/wx/palette.h b/include/wx/palette.h
+index 00aa960159..5011c14acf 100644
+--- a/include/wx/palette.h
++++ b/include/wx/palette.h
+@@ -31,7 +31,7 @@ public:
+     #include "wx/msw/palette.h"
+ #elif defined(__WXX11__) || defined(__WXMOTIF__)
+     #include "wx/x11/palette.h"
+-#elif defined(__WXGTK__)
++#elif defined(__WXGTK__) || defined(__WXWASM__)
+     #include "wx/generic/paletteg.h"
+ #elif defined(__WXMAC__)
+     #include "wx/osx/palette.h"
+diff --git a/include/wx/pen.h b/include/wx/pen.h
+index 8fbdeabad9..19a220b7d5 100644
+--- a/include/wx/pen.h
++++ b/include/wx/pen.h
+@@ -113,6 +113,8 @@ public:
+     #include "wx/osx/pen.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/pen.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/pen.h"
+ #endif
+ 
+ class WXDLLIMPEXP_CORE wxPenList: public wxGDIObjListBase
+diff --git a/include/wx/platinfo.h b/include/wx/platinfo.h
+index 03c5dcc602..aa8eadd479 100644
+--- a/include/wx/platinfo.h
++++ b/include/wx/platinfo.h
+@@ -57,7 +57,9 @@ enum wxOperatingSystemId
+     // 1<<13 and 1<<14 available for other Unix flavours
+ 
+     wxOS_DOS            = 1 << 15,      // obsolete
+-    wxOS_OS2            = 1 << 16       // obsolete
++    wxOS_OS2            = 1 << 16,      // obsolete
++
++    wxOS_CHROME_OS      = 1 << 17       // Chrome OS
+ };
+ 
+ // list of wxWidgets ports - some of them can be used with more than
+@@ -79,7 +81,19 @@ enum wxPortId
+     wxPORT_OSX      = wxPORT_MAC,   // wxOSX, using Cocoa or iPhone API
+     wxPORT_COCOA    = 1 << 8,       // wxCocoa, using Cocoa NextStep/Mac API
+     wxPORT_WINCE    = 1 << 9,       // obsolete
+-    wxPORT_QT       = 1 << 10       // wxQT, using Qt 5+
++    wxPORT_QT       = 1 << 10,      // wxQT, using Qt 5+
++    wxPORT_WASM     = 1 << 11       // wxWebAssembly, using wxUniversal
++};
++
++enum wxBrowserId
++{
++    wxBROWSER_UNKNOWN = 0,
++    wxBROWSER_FIREFOX = 1 << 0,     // Firefox
++    wxBROWSER_CHROME  = 1 << 1,     // Chrome
++    wxBROWSER_SAFARI  = 1 << 2,     // Safari
++    wxBROWSER_EDGE    = 1 << 3,     // Edge
++    wxBROWSER_MSIE    = 1 << 4,     // Internet Explorer (no WASM support)
++    wxBROWSER_OPERA   = 1 << 5      // Opera
+ };
+ 
+ // architecture bitness of the operating system
+@@ -104,6 +118,58 @@ const wxArchitecture
+     wxARCH_64 = wxBITNESS_64,
+     wxARCH_MAX = wxBITNESS_MAX;
+ 
++// information about the browser (for WebAssembly)
++class wxBrowserInfo
++{
++public:
++    wxBrowserInfo(wxBrowserId browserId = wxBROWSER_UNKNOWN,
++                  wxString browserName = wxEmptyString,
++                  wxString userAgent = wxEmptyString,
++                  wxString versionString = wxEmptyString,
++                  int versionMajor = -1,
++                  int versionMinor = -1,
++                  int versionMicro = -1)
++      : m_browserId(browserId),
++        m_browserName(browserName),
++        m_userAgent(userAgent),
++        m_versionString(versionString),
++        m_versionMajor(versionMajor),
++        m_versionMinor(versionMinor),
++        m_versionMicro(versionMicro)
++    {
++    }
++
++    wxBrowserId GetBrowserId() const
++      { return m_browserId; }
++
++    wxString GetBrowserName() const
++      { return m_browserName; }
++
++    wxString GetUserAgent() const
++      { return m_userAgent; }
++
++    wxString GetVersionString() const
++      { return m_versionString; }
++
++    int GetVersionMajor() const
++      { return m_versionMajor; }
++
++    int GetVersionMinor() const
++      { return m_versionMinor; }
++
++    int GetVersionMicro() const
++      { return m_versionMicro; }
++
++protected:
++    wxBrowserId m_browserId;
++    wxString m_browserName;
++    wxString m_userAgent;
++    wxString m_versionString; 
++    int m_versionMajor;
++    int m_versionMinor;
++    int m_versionMicro;
++};
++
+ 
+ // endian-ness of the machine
+ enum wxEndianness
+@@ -265,6 +331,8 @@ public:
+         { return m_os; }
+     wxLinuxDistributionInfo GetLinuxDistributionInfo() const
+         { return m_ldi; }
++    wxBrowserInfo GetBrowserInfo() const
++        { return m_browserInfo; }
+     wxPortId GetPortId() const
+         { return m_port; }
+     wxBitness GetBitness() const
+@@ -344,6 +412,8 @@ public:
+         { m_desktopEnv = de; }
+     void SetLinuxDistributionInfo(const wxLinuxDistributionInfo& di)
+         { m_ldi = di; }
++    void SetBrowserInfo(const wxBrowserInfo& browserInfo)
++        { m_browserInfo = browserInfo; }
+ 
+ 
+     // miscellaneous
+@@ -401,6 +471,9 @@ protected:
+     wxString m_desktopEnv;
+     wxLinuxDistributionInfo m_ldi;
+ 
++    // wxWebAssembly specific
++    wxBrowserInfo m_browserInfo;
++
+ 
+     // toolkit
+     // -----------------
+diff --git a/include/wx/popupwin.h b/include/wx/popupwin.h
+index c3964098b6..7aca8fdf68 100644
+--- a/include/wx/popupwin.h
++++ b/include/wx/popupwin.h
+@@ -76,6 +76,8 @@ public:
+     #include "wx/osx/popupwin.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/popupwin.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/popupwin.h"
+ #else
+     #error "wxPopupWindow is not supported under this platform."
+ #endif
+@@ -111,6 +113,8 @@ public:
+     // Override to implement delayed destruction of this window.
+     virtual bool Destroy() wxOVERRIDE;
+ 
++    virtual bool ShouldSendClickToUnderlyingOnDismiss() const { return true; }
++
+ protected:
+     // this is called when the popup is disappeared because of anything
+     // else but direct call to Dismiss()
+diff --git a/include/wx/rawbmp.h b/include/wx/rawbmp.h
+index c32122d5b9..b4add0a5b0 100644
+--- a/include/wx/rawbmp.h
++++ b/include/wx/rawbmp.h
+@@ -186,6 +186,12 @@ typedef wxPixelFormat<unsigned char, 24, 0, 1, 2> wxImagePixelFormat;
+     // Under DirectFB, RGB components are reversed, they're in BGR order
+     typedef wxPixelFormat<unsigned char, 24, 2, 1, 0> wxNativePixelFormat;
+ 
++    #define wxPIXEL_FORMAT_ALPHA 3
++#elif defined(__WXWASM__)
++    // Under Wasm, RGB components are reversed, they're in BGR order
++    // Alpha channel is present and must be set to 255, hence 32bpp
++    typedef wxPixelFormat<unsigned char, 32, 2, 1, 0> wxNativePixelFormat;
++
+     #define wxPIXEL_FORMAT_ALPHA 3
+ #elif defined(__WXQT__)
+     typedef wxPixelFormat<unsigned char, 24, 0, 1, 2> wxNativePixelFormat;
+diff --git a/include/wx/region.h b/include/wx/region.h
+index 7db620b49d..4be85255f2 100644
+--- a/include/wx/region.h
++++ b/include/wx/region.h
+@@ -224,6 +224,8 @@ protected:
+     #include "wx/osx/region.h"
+ #elif defined(__WXQT__)
+     #include "wx/qt/region.h"
++#elif defined(__WXWASM__)
++    #include "wx/wasm/region.h"
+ #endif
+ 
+ // ----------------------------------------------------------------------------
+diff --git a/include/wx/setup_inc.h b/include/wx/setup_inc.h
+index 28c9c6d5f8..87db442557 100644
+--- a/include/wx/setup_inc.h
++++ b/include/wx/setup_inc.h
+@@ -1604,5 +1604,6 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+diff --git a/include/wx/string.h b/include/wx/string.h
+index df2a088e1e..3d426a10c0 100644
+--- a/include/wx/string.h
++++ b/include/wx/string.h
+@@ -558,7 +558,10 @@ private:
+       // gcc 7 warns about not being able to optimize this loop because of
+       // possible loop variable overflow, really not sure what to do about
+       // this, so just disable this warnings for now
++
++#ifndef __clang__
+       wxGCC_ONLY_WARNING_SUPPRESS(unsafe-loop-optimizations)
++#endif
+ 
+       Cache::Element * const cacheEnd = GetCacheEnd();
+       for ( Cache::Element *c = cacheBegin; c != cacheEnd; c++ )
+@@ -567,7 +570,9 @@ private:
+               return c;
+       }
+ 
++#ifndef __clang__
+       wxGCC_ONLY_WARNING_RESTORE(unsafe-loop-optimizations)
++#endif
+ 
+       return NULL;
+   }
+diff --git a/include/wx/toplevel.h b/include/wx/toplevel.h
+index 5632aff027..ab6b21a679 100644
+--- a/include/wx/toplevel.h
++++ b/include/wx/toplevel.h
+@@ -377,7 +377,10 @@ protected:
+     #define wxTopLevelWindowNative wxTopLevelWindowMotif
+ #elif defined(__WXQT__)
+     #include "wx/qt/toplevel.h"
+-#define wxTopLevelWindowNative wxTopLevelWindowQt
++    #define wxTopLevelWindowNative wxTopLevelWindowQt
++#elif defined(__WXWASM__)
++    #include "wx/wasm/toplevel.h"
++    #define wxTopLevelWindowNative wxTopLevelWindowWasm
+ #endif
+ 
+ #ifdef __WXUNIVERSAL__
+diff --git a/include/wx/univ/chkconf.h b/include/wx/univ/chkconf.h
+index eda435341c..b75d9580ed 100644
+--- a/include/wx/univ/chkconf.h
++++ b/include/wx/univ/chkconf.h
+@@ -106,6 +106,14 @@
+ #   endif
+ #endif /* wxUSE_THEME_MONO */
+ 
++#ifndef wxUSE_THEME_WASM
++#   ifdef wxABORT_ON_CONFIG_ERROR
++#       error "wxUSE_THEME_WASM must be defined"
++#   else
++#       define wxUSE_THEME_WASM 1
++#   endif
++#endif /* wxUSE_THEME_WASM */
++
+ #ifndef wxUSE_THEME_WIN32
+ #   ifdef wxABORT_ON_CONFIG_ERROR
+ #       error "wxUSE_THEME_WIN32 must be defined"
+diff --git a/include/wx/univ/choice.h b/include/wx/univ/choice.h
+index 512e317e3d..c666c94533 100644
+--- a/include/wx/univ/choice.h
++++ b/include/wx/univ/choice.h
+@@ -52,6 +52,8 @@ public:
+                 const wxValidator& validator = wxDefaultValidator,
+                 const wxString& name = wxASCII_STR(wxChoiceNameStr));
+ 
++    virtual int GetCurrentSelection() const { return GetSelection(); }
++
+ private:
+     void OnComboBox(wxCommandEvent &event);
+ 
+diff --git a/include/wx/univ/dialog.h b/include/wx/univ/dialog.h
+index fa79b88ff4..757a93d389 100644
+--- a/include/wx/univ/dialog.h
++++ b/include/wx/univ/dialog.h
+@@ -10,6 +10,8 @@
+ #ifndef _WX_UNIV_DIALOG_H_
+ #define _WX_UNIV_DIALOG_H_
+ 
++#include <functional>
++
+ extern WXDLLIMPEXP_DATA_CORE(const char) wxDialogNameStr[];
+ class WXDLLIMPEXP_FWD_CORE wxWindowDisabler;
+ class WXDLLIMPEXP_FWD_CORE wxEventLoop;
+@@ -47,6 +49,8 @@ public:
+     // For now, same as Show(true) but returns return code
+     virtual int ShowModal() wxOVERRIDE;
+ 
++    virtual void ShowModal(std::function<void (int)> callback) wxOVERRIDE;
++
+     // may be called to terminate the dialog with the given return code
+     virtual void EndModal(int retCode) wxOVERRIDE;
+ 
+@@ -76,6 +80,8 @@ private:
+     // modal dialog runs its own event loop
+     wxEventLoop *m_eventLoop;
+ 
++    std::function<void (int)> m_modalCallback;
++
+     // is modal right now?
+     bool m_isShowingModal;
+ 
+diff --git a/include/wx/univ/radiobut.h b/include/wx/univ/radiobut.h
+index 711e0a676c..e6ea79f798 100644
+--- a/include/wx/univ/radiobut.h
++++ b/include/wx/univ/radiobut.h
+@@ -65,6 +65,12 @@ protected:
+     // another radiobutton
+     void ClearValue();
+ 
++    void Toggle();
++
++    virtual bool PerformAction(const wxControlAction& action,
++                               long numArg,
++                               const wxString& strArg) wxOVERRIDE;
++
+     // called when the radio button becomes checked: we clear all the buttons
+     // in the same group with us here
+     virtual void OnCheck() wxOVERRIDE;
+diff --git a/include/wx/univ/renderer.h b/include/wx/univ/renderer.h
+index 986535c2be..9f0e47d2e1 100644
+--- a/include/wx/univ/renderer.h
++++ b/include/wx/univ/renderer.h
+@@ -63,6 +63,8 @@ public:
+     // get the total size of the menu
+     virtual wxSize GetSize() const = 0;
+ 
++    virtual wxCoord GetOverflowHeight() const { return 0; }
++
+     virtual ~wxMenuGeometryInfo();
+ };
+ 
+@@ -248,6 +250,7 @@ public:
+     // draw the slider shaft
+     virtual void DrawSliderShaft(wxDC& dc,
+                                  const wxRect& rect,
++                                 double fracValue,
+                                  int lenThumb,
+                                  wxOrientation orient,
+                                  int flags = 0,
+@@ -297,6 +300,11 @@ public:
+     virtual void DrawMenuSeparator(wxDC& dc,
+                                    wxCoord y,
+                                    const wxMenuGeometryInfo& geomInfo) = 0;
++
++    // draw menu overflow arrow
++    virtual void DrawMenuOverflowArrow(wxDC& WXUNUSED(dc),
++                                       const wxRect& WXUNUSED(rect),
++                                       wxDirection WXUNUSED(direction)) {}
+ #endif // wxUSE_MENUS
+ 
+ #if wxUSE_STATUSBAR
+@@ -375,7 +383,7 @@ public:
+ 
+ #if wxUSE_SCROLLBAR
+     // get the size of a scrollbar arrow
+-    virtual wxSize GetScrollbarArrowSize() const = 0;
++    virtual wxSize GetScrollbarArrowSize(wxOrientation orientation) const = 0;
+ #endif // wxUSE_SCROLLBAR
+ 
+     // get the height of a listbox item from the base font height
+@@ -649,12 +657,13 @@ public:
+ 
+     virtual void DrawSliderShaft(wxDC& dc,
+                                  const wxRect& rect,
++                                 double fracValue,
+                                  int lenThumb,
+                                  wxOrientation orient,
+                                  int flags = 0,
+                                  long style = 0,
+                                  wxRect *rectShaft = NULL) wxOVERRIDE
+-        { m_renderer->DrawSliderShaft(dc, rect, lenThumb, orient, flags, style, rectShaft); }
++        { m_renderer->DrawSliderShaft(dc, rect, fracValue, lenThumb, orient, flags, style, rectShaft); }
+     virtual void DrawSliderThumb(wxDC& dc,
+                                  const wxRect& rect,
+                                  wxOrientation orient,
+@@ -695,6 +704,12 @@ public:
+                                    wxCoord y,
+                                    const wxMenuGeometryInfo& geomInfo) wxOVERRIDE
+         { m_renderer->DrawMenuSeparator(dc, y, geomInfo); }
++
++    virtual void DrawMenuOverflowArrow(wxDC& dc,
++                                       const wxRect& rect,
++                                       wxDirection direction) wxOVERRIDE
++        { m_renderer->DrawMenuOverflowArrow(dc, rect, direction); }
++
+ #endif // wxUSE_MENUS
+ 
+ #if wxUSE_STATUSBAR
+@@ -755,8 +770,8 @@ public:
+         { return m_renderer->AreScrollbarsInsideBorder(); }
+ 
+ #if wxUSE_SCROLLBAR
+-    virtual wxSize GetScrollbarArrowSize() const wxOVERRIDE
+-        { return m_renderer->GetScrollbarArrowSize(); }
++    virtual wxSize GetScrollbarArrowSize(wxOrientation orientation) const wxOVERRIDE
++        { return m_renderer->GetScrollbarArrowSize(orientation); }
+ #endif // wxUSE_SCROLLBAR
+ 
+     virtual wxCoord GetListboxItemHeight(wxCoord fontHeight) wxOVERRIDE
+diff --git a/include/wx/univ/scrolbar.h b/include/wx/univ/scrolbar.h
+index acc1d3a1cb..1b9e91c7ff 100644
+--- a/include/wx/univ/scrolbar.h
++++ b/include/wx/univ/scrolbar.h
+@@ -131,6 +131,8 @@ protected:
+     virtual void DoDraw(wxControlRenderer *renderer) wxOVERRIDE;
+     virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
+ 
++    wxSize GetScrollbarArrowSize() const;
++
+     // forces update of thumb's visual appearance (does nothing if m_dirty=false)
+     void UpdateThumb();
+ 
+diff --git a/include/wx/univ/setup.h b/include/wx/univ/setup.h
+index 6757c978aa..c4100733a2 100644
+--- a/include/wx/univ/setup.h
++++ b/include/wx/univ/setup.h
+@@ -1607,6 +1607,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+ /* --- end common options --- */
+@@ -1756,6 +1757,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ /* --- end wxUniv options --- */
+ 
+diff --git a/include/wx/univ/setup_inc.h b/include/wx/univ/setup_inc.h
+index 8e13ecd229..155a528080 100644
+--- a/include/wx/univ/setup_inc.h
++++ b/include/wx/univ/setup_inc.h
+@@ -22,4 +22,5 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+diff --git a/include/wx/univ/slider.h b/include/wx/univ/slider.h
+index 1bc6c181bd..77c47e2f13 100644
+--- a/include/wx/univ/slider.h
++++ b/include/wx/univ/slider.h
+@@ -149,6 +149,10 @@ protected:
+     // common part of all ctors
+     void Init();
+ 
++    bool IsInverted() const {
++        return HasFlag(wxSL_INVERSE);
++    }
++
+     // normalize the value to fit in the range
+     int NormalizeValue(int value) const;
+ 
+diff --git a/include/wx/univ/spinbutt.h b/include/wx/univ/spinbutt.h
+index 8dbe81e94c..07d0bad300 100644
+--- a/include/wx/univ/spinbutt.h
++++ b/include/wx/univ/spinbutt.h
+@@ -70,7 +70,7 @@ public:
+ protected:
+     virtual wxSize DoGetBestClientSize() const wxOVERRIDE;
+     virtual void DoDraw(wxControlRenderer *renderer) wxOVERRIDE;
+-    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
++    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_STATIC; }
+ 
+     // the common part of all ctors
+     void Init();
+diff --git a/include/wx/univ/textctrl.h b/include/wx/univ/textctrl.h
+index 3a15244a8b..399f72c87d 100644
+--- a/include/wx/univ/textctrl.h
++++ b/include/wx/univ/textctrl.h
+@@ -247,7 +247,7 @@ public:
+ 
+ protected:
+     // ensure we have correct default border
+-    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_SUNKEN; }
++    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_STATIC; }
+ 
+     // override base class methods
+     virtual void DoDrawBorder(wxDC& dc, const wxRect& rect) wxOVERRIDE;
+@@ -256,6 +256,8 @@ protected:
+     // calc the size from the text extent
+     virtual wxSize DoGetBestClientSize() const wxOVERRIDE;
+ 
++    virtual wxSize DoGetSizeFromTextSize(int xlen, int ylen) const wxOVERRIDE;
++
+     // implements Set/ChangeValue()
+     virtual void DoSetValue(const wxString& value, int flags = 0) wxOVERRIDE;
+     virtual wxString DoGetValue() const wxOVERRIDE;
+diff --git a/include/wx/univ/tglbtn.h b/include/wx/univ/tglbtn.h
+index a49adefea7..ae80ebb074 100644
+--- a/include/wx/univ/tglbtn.h
++++ b/include/wx/univ/tglbtn.h
+@@ -46,8 +46,8 @@ public:
+     virtual void Click() wxOVERRIDE;
+ 
+     // Get/set the value
+-    void SetValue(bool state);
+-    bool GetValue() const { return m_value; }
++    void SetValue(bool state) wxOVERRIDE;
++    bool GetValue() const wxOVERRIDE { return m_value; }
+ 
+ protected:
+     virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
+diff --git a/include/wx/univ/theme.h b/include/wx/univ/theme.h
+index 7507ae32eb..f558f18612 100644
+--- a/include/wx/univ/theme.h
++++ b/include/wx/univ/theme.h
+@@ -170,6 +170,8 @@ struct WXDLLIMPEXP_CORE wxThemeInfo
+     #define wxUSE_THEME_MONO   1
+     #undef  wxUSE_THEME_METAL
+     #define wxUSE_THEME_METAL  1
++    #undef  wxUSE_THEME_WASM
++    #define wxUSE_THEME_WASM   1
+ #endif // wxUSE_ALL_THEMES
+ 
+ // determine the default theme to use:
+@@ -179,6 +181,8 @@ struct WXDLLIMPEXP_CORE wxThemeInfo
+     // use mono theme for DirectFB port because it cannot correctly
+     // render neither win32 nor gtk themes yet:
+     #define wxUNIV_DEFAULT_THEME mono
++#elif defined(__WXWASM__) && wxUSE_THEME_WASM
++    #define wxUNIV_DEFAULT_THEME wasm
+ #endif
+ 
+ // if no theme was picked, get any theme compiled in (sorted by
+@@ -190,6 +194,8 @@ struct WXDLLIMPEXP_CORE wxThemeInfo
+         #define wxUNIV_DEFAULT_THEME win32
+     #elif wxUSE_THEME_MONO
+         #define wxUNIV_DEFAULT_THEME mono
++    #elif wxUSE_THEME_WASM
++        #define wxUNIV_DEFAULT_THEME wasm
+     #endif
+     // If nothing matches, no themes are compiled and the app must provide
+     // some theme itself
+diff --git a/include/wx/univ/window.h b/include/wx/univ/window.h
+index b615c2a04f..8c273b1c02 100644
+--- a/include/wx/univ/window.h
++++ b/include/wx/univ/window.h
+@@ -47,6 +47,8 @@ class WXDLLIMPEXP_FWD_CORE wxRenderer;
+ #define wxWindowNative wxWindowX11
+ #elif defined(__WXMAC__)
+ #define wxWindowNative wxWindowMac
++#elif defined(__WXWASM__)
++#define wxWindowNative wxWindowWasm
+ #endif
+ 
+ class WXDLLIMPEXP_CORE wxWindow : public wxWindowNative
+@@ -203,6 +205,7 @@ protected:
+ 
+ #if wxUSE_MENUS
+     virtual bool DoPopupMenu(wxMenu *menu, int x, int y) wxOVERRIDE;
++    virtual void DoPopupMenu(wxMenu *menu, int x, int y, std::function<void (bool)> callback) wxOVERRIDE;
+ #endif // wxUSE_MENUS
+ 
+     // we deal with the scrollbars in these functions
+@@ -282,6 +285,8 @@ private:
+ 
+     // the last window over which Alt was pressed (used by OnKeyUp)
+     static wxWindow *ms_winLastAltPress;
++
++    std::function<void (int)> m_popupCallback;
+ #endif // wxUSE_MENUS
+ 
+     wxDECLARE_DYNAMIC_CLASS(wxWindow);
+diff --git a/include/wx/unix/apptrait.h b/include/wx/unix/apptrait.h
+index 65136534e9..900347d8c7 100644
+--- a/include/wx/unix/apptrait.h
++++ b/include/wx/unix/apptrait.h
+@@ -66,7 +66,7 @@ public:
+     virtual wxString GetDesktopEnvironment() const wxOVERRIDE;
+ #endif // __WXGTK20____
+ 
+-#if defined(__WXGTK20__)
++#if defined(__WXGTK20__) || defined(__WXWASM__)
+     virtual bool ShowAssertDialog(const wxString& msg) wxOVERRIDE;
+ #endif
+ 
+diff --git a/include/wx/utils.h b/include/wx/utils.h
+index ac5f6241d3..e1626df44d 100644
+--- a/include/wx/utils.h
++++ b/include/wx/utils.h
+@@ -161,6 +161,10 @@ WXDLLIMPEXP_BASE wxString wxGetCpuArchitectureName();
+ WXDLLIMPEXP_BASE wxLinuxDistributionInfo wxGetLinuxDistributionInfo();
+ #endif
+ 
++#ifdef __WXWASM__
++WXDLLIMPEXP_BASE wxBrowserInfo wxGetBrowserInfo();
++#endif
++
+ // Return a string with the current date/time
+ WXDLLIMPEXP_BASE wxString wxNow();
+ 
+diff --git a/include/wx/vlbox.h b/include/wx/vlbox.h
+index b7b149ead6..2ccb3a9d79 100644
+--- a/include/wx/vlbox.h
++++ b/include/wx/vlbox.h
+@@ -93,7 +93,7 @@ public:
+     // is this item the current one?
+     bool IsCurrent(size_t item) const { return item == (size_t)m_current; }
+     #ifdef __WXUNIVERSAL__
+-    bool IsCurrent() const { return wxVScrolledWindow::IsCurrent(); }
++    bool IsCurrent() const wxOVERRIDE { return wxVScrolledWindow::IsCurrent(); }
+     #endif
+ 
+     // is this item selected?
+diff --git a/include/wx/window.h b/include/wx/window.h
+index 4bc21b75b9..3b49e0ac5c 100644
+--- a/include/wx/window.h
++++ b/include/wx/window.h
+@@ -1304,6 +1304,14 @@ public:
+     bool PopupMenu(wxMenu *menu, const wxPoint& pos = wxDefaultPosition)
+         { return PopupMenu(menu, pos.x, pos.y); }
+     bool PopupMenu(wxMenu *menu, int x, int y);
++    void PopupMenu(wxMenu *menu,
++                   const wxPoint& pos,
++                   std::function<void (bool)> callback)
++        { return PopupMenu(menu, pos.x, pos.y, callback); }
++    void PopupMenu(wxMenu *menu,
++                   int x,
++                   int y,
++                   std::function<void (bool)> callback);
+ 
+     // simply return the id of the selected item or wxID_NONE without
+     // generating any events
+@@ -1427,8 +1435,9 @@ public:
+ #else // !wxUSE_TOOLTIPS
+         // make it much easier to compile apps in an environment
+         // that doesn't support tooltips
+-    void SetToolTip(const wxString & WXUNUSED(tip)) { }
+-    void UnsetToolTip() { }
++    void SetToolTip(const wxString & tip) { m_tooltipText = tip; }
++    void UnsetToolTip() { m_tooltipText.Clear(); }
++    wxString GetToolTipText() const { return m_tooltipText; }
+ #endif // wxUSE_TOOLTIPS/!wxUSE_TOOLTIPS
+ 
+     // drag and drop
+@@ -1732,7 +1741,9 @@ protected:
+     // the tooltip for this window (may be NULL)
+ #if wxUSE_TOOLTIPS
+     wxToolTip           *m_tooltip;
+-#endif // wxUSE_TOOLTIPS
++#else // !wxUSE_TOOLTIPS
++    wxString            m_tooltipText;
++#endif // wxUSE_TOOLTIPS/!wxUSE_TOOLTIPS
+ 
+     // constraints and sizers
+ #if wxUSE_CONSTRAINTS
+@@ -1918,6 +1929,7 @@ protected:
+ 
+ #if wxUSE_MENUS
+     virtual bool DoPopupMenu(wxMenu *menu, int x, int y) = 0;
++    virtual void DoPopupMenu(wxMenu *menu, int x, int y, std::function<void (bool)> callback) = 0;
+ #endif // wxUSE_MENUS
+ 
+     // Makes an adjustment to the window position to make it relative to the
+@@ -2052,6 +2064,13 @@ inline void wxWindowBase::SetInitialBestSize(const wxSize& size)
+         #define wxWindowQt wxWindow
+     #endif // wxUniv
+     #include "wx/qt/window.h"
++#elif defined(__WXWASM__)
++    #ifdef __WXUNIVERSAL__
++        #define wxWindowNative wxWindowWasm
++    #else // !wxUniv
++        #define wxWindowWasm wxWindow
++    #endif // wxUniv
++    #include "wx/wasm/window.h"
+ #endif
+ 
+ // for wxUniversal, we now derive the real wxWindow from wxWindow<platform>,
+diff --git a/samples/minimal/minimal.cpp b/samples/minimal/minimal.cpp
+index 470e765423..505ff65c73 100644
+--- a/samples/minimal/minimal.cpp
++++ b/samples/minimal/minimal.cpp
+@@ -142,7 +142,7 @@ MyFrame::MyFrame(const wxString& title)
+        : wxFrame(NULL, wxID_ANY, title)
+ {
+     // set the frame icon
+-    SetIcon(wxICON(sample));
++    //SetIcon(wxICON(sample));
+ 
+ #if wxUSE_MENUBAR
+     // create a menu bar
+diff --git a/setup.h.in b/setup.h.in
+index 895b8f2b57..f0ca35c90a 100644
+--- a/setup.h.in
++++ b/setup.h.in
+@@ -107,6 +107,7 @@
+ #undef __ULTRIX__
+ #undef __UNIXWARE__
+ #undef __VMS__
++#undef __WASM__
+ 
+ #undef __IA64__
+ #undef __ALPHA__
+@@ -645,6 +646,7 @@
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ 
+ /* --- end common options --- */
+diff --git a/setup.h_vms b/setup.h_vms
+index 65564d1493..fa367b76e6 100644
+--- a/setup.h_vms
++++ b/setup.h_vms
+@@ -697,6 +697,7 @@ typedef pid_t GPid;
+ #define wxUSE_THEME_GTK     1
+ #define wxUSE_THEME_METAL   1
+ #define wxUSE_THEME_MONO    1
++#define wxUSE_THEME_WASM    1
+ #define wxUSE_THEME_WIN32   1
+ #else
+ #define wxUSE_ALL_THEMES    0
+@@ -704,6 +705,7 @@ typedef pid_t GPid;
+ #define wxUSE_THEME_GTK     0
+ #define wxUSE_THEME_METAL   0
+ #define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
+ #define wxUSE_THEME_WIN32   0
+ #endif
+ 
+diff --git a/src/common/appcmn.cpp b/src/common/appcmn.cpp
+index 404429d4ff..d787ea0dbe 100644
+--- a/src/common/appcmn.cpp
++++ b/src/common/appcmn.cpp
+@@ -330,6 +330,7 @@ bool wxAppBase::OnInitGui()
+ 
+ int wxAppBase::OnRun()
+ {
++    printf("Running app\n");
+     // see the comment in ctor: if the initial value hasn't been changed, use
+     // the default Yes from now on
+     if ( m_exitOnFrameDelete == Later )
+diff --git a/src/common/combocmn.cpp b/src/common/combocmn.cpp
+index b61aac35bf..270da64209 100644
+--- a/src/common/combocmn.cpp
++++ b/src/common/combocmn.cpp
+@@ -188,6 +188,18 @@ wxCONSTRUCTOR_5( wxComboBox, wxWindow*, Parent, wxWindowID, Id, \
+ #undef COMBO_MARGIN
+ #define COMBO_MARGIN                  FOCUS_RING
+ 
++#elif defined(__WXWASM__)
++
++#include "wx/dialog.h"
++#define wxComboCtrlGenericTLW   wxDialog
++
++#define USE_TRANSIENT_POPUP           1 // Use wxPopupWindowTransient (preferred, if it works properly on platform)
++#define TRANSIENT_POPUPWIN_IS_PERFECT 1 // wxPopupTransientWindow works, its child can have focus, and common
++                                        // native controls work on it like normal.
++#define POPUPWIN_IS_PERFECT           1 // Same, but for non-transient popup window.
++#define TEXTCTRL_TEXT_CENTERED        0 // 1 if text in textctrl is vertically centered
++#define FOCUS_RING                    0 // No focus ring on wxWASM
++
+ #else
+ 
+ #include "wx/dialog.h"
+@@ -206,7 +218,7 @@ wxCONSTRUCTOR_5( wxComboBox, wxWindow*, Parent, wxWindowID, Id, \
+ // Popupwin is really only supported on wxMSW and wxGTK, regardless
+ // what the wxUSE_POPUPWIN says.
+ // FIXME: Why isn't wxUSE_POPUPWIN reliable any longer? (it was in wxW2.6.2)
+-#if (!defined(__WXMSW__) && !defined(__WXGTK__) && !defined(__WXMAC__))
++#if (!defined(__WXMSW__) && !defined(__WXGTK__) && !defined(__WXMAC__) && !defined(__WXWASM__))
+ #undef wxUSE_POPUPWIN
+ #define wxUSE_POPUPWIN 0
+ #endif
+@@ -518,8 +530,8 @@ bool wxComboPopupWindow::ProcessLeftDown(wxMouseEvent& event)
+ void wxComboPopupWindow::OnDismiss()
+ {
+     wxComboCtrlBase* combo = (wxComboCtrlBase*) GetParent();
+-    wxASSERT_MSG( wxDynamicCast(combo, wxComboCtrlBase),
+-                  wxT("parent might not be wxComboCtrl, but check wxIMPLEMENT_DYNAMIC_CLASS2() macro for correctness") );
++    //wxASSERT_MSG( wxDynamicCast(combo, wxComboCtrlBase),
++    //              wxT("parent might not be wxComboCtrl, but check wxIMPLEMENT_DYNAMIC_CLASS2() macro for correctness") );
+ 
+     combo->OnPopupDismiss(true);
+ }
+@@ -2295,7 +2307,7 @@ void wxComboCtrlBase::ShowPopup()
+ 
+     wxRect displayRect = wxDisplay(this).GetGeometry();
+     screenHeight = displayRect.GetHeight();
+-    scrPos = GetScreenPosition();
++    scrPos = GetScreenPosition() - GetClientAreaOrigin();
+ 
+     spaceAbove = scrPos.y - displayRect.GetY();
+     spaceBelow = screenHeight - spaceAbove - ctrlSz.y;
+diff --git a/src/common/config.cpp b/src/common/config.cpp
+index a5e04ec1ca..df6adf31ad 100644
+--- a/src/common/config.cpp
++++ b/src/common/config.cpp
+@@ -60,6 +60,8 @@ wxConfigBase *wxAppTraitsBase::CreateConfig()
+     return new
+     #if defined(__WINDOWS__) && wxUSE_CONFIG_NATIVE
+         wxRegConfig(wxTheApp->GetAppName(), wxTheApp->GetVendorName());
++    #elif defined(__WXWASM__) && wxUSE_CONFIG_NATIVE
++        wxLocalStorageConfig(wxTheApp->GetAppName());
+     #else // either we're under Unix or wish to use files even under Windows
+         wxFileConfig(wxTheApp->GetAppName());
+     #endif
+diff --git a/src/common/dcbase.cpp b/src/common/dcbase.cpp
+index fd964d69cc..3cf66eee46 100644
+--- a/src/common/dcbase.cpp
++++ b/src/common/dcbase.cpp
+@@ -83,6 +83,13 @@
+     #include "wx/qt/dcmemory.h"
+     #include "wx/qt/dcscreen.h"
+ #endif
++
++#ifdef __WXWASM__
++    #include "wx/wasm/dcclient.h"
++    #include "wx/wasm/dcmemory.h"
++    #include "wx/wasm/dcscreen.h"
++#endif
++
+ //----------------------------------------------------------------------------
+ // wxDCFactory
+ //----------------------------------------------------------------------------
+diff --git a/src/common/dcbufcmn.cpp b/src/common/dcbufcmn.cpp
+index 74958fce10..c84b0f5c0f 100644
+--- a/src/common/dcbufcmn.cpp
++++ b/src/common/dcbufcmn.cpp
+@@ -51,8 +51,8 @@ public:
+             return DoCreateBuffer(dc, w, h);
+ 
+         if ( !ms_buffer ||
+-                w > ms_buffer->GetScaledWidth() ||
+-                    h > ms_buffer->GetScaledHeight() )
++                w > ms_buffer->GetWidth() ||
++                    h > ms_buffer->GetHeight() )
+         {
+             delete ms_buffer;
+ 
+diff --git a/src/common/event.cpp b/src/common/event.cpp
+index a2c64b72a0..438017ab58 100644
+--- a/src/common/event.cpp
++++ b/src/common/event.cpp
+@@ -608,6 +608,8 @@ void wxMouseEvent::Assign(const wxMouseEvent& event)
+     m_aux1Down = event.m_aux1Down;
+     m_aux2Down = event.m_aux2Down;
+ 
++    m_clickCount = event.m_clickCount;
++
+     m_wheelRotation = event.m_wheelRotation;
+     m_wheelDelta = event.m_wheelDelta;
+     m_wheelInverted = event.m_wheelInverted;
+diff --git a/src/common/file.cpp b/src/common/file.cpp
+index cae785b1f9..9872a1ceab 100644
+--- a/src/common/file.cpp
++++ b/src/common/file.cpp
+@@ -563,7 +563,7 @@ bool wxTempFile::Open(const wxString& strName)
+         return false;
+     }
+ 
+-#ifdef __UNIX__
++#if defined(__UNIX__) && !defined(__WXWASM__)
+     // the temp file should have the same permissions as the original one
+     mode_t mode;
+ 
+diff --git a/src/common/filename.cpp b/src/common/filename.cpp
+index d10ae513c2..ee25589855 100644
+--- a/src/common/filename.cpp
++++ b/src/common/filename.cpp
+@@ -2713,7 +2713,7 @@ bool wxFileName::SetTimes(const wxDateTime *dtAccess,
+ 
+ bool wxFileName::Touch() const
+ {
+-#if defined(__UNIX_LIKE__)
++#if defined(__UNIX_LIKE__) && !defined(__WXWASM__)
+     // under Unix touching file is simple: just pass NULL to utime()
+     if ( utime(GetFullPath().fn_str(), NULL) == 0 )
+     {
+diff --git a/src/common/fontcmn.cpp b/src/common/fontcmn.cpp
+index 3ae09d0f49..9089eb0fe6 100644
+--- a/src/common/fontcmn.cpp
++++ b/src/common/fontcmn.cpp
+@@ -732,6 +732,8 @@ void wxNativeFontInfo::SetPointSize(int pointsize)
+ 
+ #ifdef wxNO_NATIVE_FONTINFO
+ 
++#if !defined(__WXWASM__)
++
+ // These are the generic forms of FromString()/ToString.
+ //
+ // convert to/from the string representation: the general format is
+@@ -822,6 +824,8 @@ wxString wxNativeFontInfo::ToString() const
+     return s;
+ }
+ 
++#endif // !defined(__WXWASM__)
++
+ void wxNativeFontInfo::Init()
+ {
+     pointSize = 0.0f;
+@@ -832,6 +836,9 @@ void wxNativeFontInfo::Init()
+     strikethrough = false;
+     faceName.clear();
+     encoding = wxFONTENCODING_DEFAULT;
++#if defined(__WXWASM__)
++    m_isRendered = false;
++#endif
+ }
+ 
+ double wxNativeFontInfo::GetFractionalPointSize() const
+@@ -874,6 +881,8 @@ wxFontEncoding wxNativeFontInfo::GetEncoding() const
+     return encoding;
+ }
+ 
++#if !defined(__WXWASM__)
++
+ void wxNativeFontInfo::SetFractionalPointSize(double pointsize)
+ {
+     pointSize = pointsize;
+@@ -915,6 +924,8 @@ void wxNativeFontInfo::SetEncoding(wxFontEncoding encoding_)
+     encoding = encoding_;
+ }
+ 
++#endif // !defined(__WXWASM__)
++
+ #endif // generic wxNativeFontInfo implementation
+ 
+ // conversion to/from user-readable string: this is used in the generic
+diff --git a/src/common/init.cpp b/src/common/init.cpp
+index 6b2cc19710..200c15d111 100644
+--- a/src/common/init.cpp
++++ b/src/common/init.cpp
+@@ -487,9 +487,11 @@ int wxEntryReal(int& argc, wxChar **argv)
+         // app initialization
+         if ( !wxTheApp->CallOnInit() )
+         {
++            printf("OnInit failed\n");
+             // don't call OnExit() if OnInit() failed
+             return -1;
+         }
++        printf("OnInit succeeded\n");
+ 
+         // ensure that OnExit() is called if OnInit() had succeeded
+         class CallOnExit
+diff --git a/src/common/intl.cpp b/src/common/intl.cpp
+index 0b0d8798f4..8f66074c53 100644
+--- a/src/common/intl.cpp
++++ b/src/common/intl.cpp
+@@ -72,6 +72,10 @@
+     #include <CoreFoundation/CFString.h>
+ #endif
+ 
++#if defined(__WXWASM__)
++    #include "emscripten.h"
++#endif
++
+ // ----------------------------------------------------------------------------
+ // constants
+ // ----------------------------------------------------------------------------
+@@ -648,6 +652,16 @@ inline bool wxGetNonEmptyEnvVar(const wxString& name, wxString* value)
+     langFull = str.AsString()+"_";
+     str.reset(wxCFRetain((CFStringRef)CFLocaleGetValue(userLocaleRef, kCFLocaleCountryCode)));
+     langFull += str.AsString();
++#elif defined(__WXWASM__)
++    const int langBufferSize = 16;
++    char langBuffer[langBufferSize];
++
++    EM_ASM({
++        stringToUTF8(navigator.language, $0, $1);
++    }, langBuffer, langBufferSize);
++
++    langFull = wxString::FromUTF8(langBuffer);
++    langFull.Replace("-", "_");
+ #else
+     if (!wxGetNonEmptyEnvVar(wxS("LC_ALL"), &langFull) &&
+         !wxGetNonEmptyEnvVar(wxS("LC_MESSAGES"), &langFull) &&
+diff --git a/src/common/menucmn.cpp b/src/common/menucmn.cpp
+index b71cd0bb4b..2e5d2a8681 100644
+--- a/src/common/menucmn.cpp
++++ b/src/common/menucmn.cpp
+@@ -659,7 +659,7 @@ bool wxMenuBase::DoProcessEvent(wxMenuBase* menu, wxEvent& event, wxWindow* win)
+ 
+     // Process event in the menu itself and all its parent menus, if it's a
+     // submenu, first.
+-    for ( ; menu; menu = menu->GetParent() )
++    while (menu)
+     {
+         wxEvtHandler *handler = menu->GetEventHandler();
+         if ( handler )
+@@ -671,6 +671,8 @@ bool wxMenuBase::DoProcessEvent(wxMenuBase* menu, wxEvent& event, wxWindow* win)
+             if ( win || mb )
+                 event.SetWillBeProcessedAgain();
+ 
++            menu = menu->GetParent();
++
+             if ( handler->SafelyProcessEvent(event) )
+                 return true;
+         }
+diff --git a/src/common/platinfo.cpp b/src/common/platinfo.cpp
+index b19f6f9e09..a68f1cbe31 100644
+--- a/src/common/platinfo.cpp
++++ b/src/common/platinfo.cpp
+@@ -203,6 +203,12 @@ void wxPlatformInfo::InitForCurrentPlatform()
+     m_ldi = wxGetLinuxDistributionInfo();
+ #endif
+     // else: leave m_ldi empty
++
++#ifdef __WXWASM__
++    m_browserInfo = wxGetBrowserInfo();
++#endif
++    // else: leave m_browserInfo empty
++
+ }
+ 
+ /* static */
+diff --git a/src/common/popupcmn.cpp b/src/common/popupcmn.cpp
+index 51657f2422..659e3efa94 100644
+--- a/src/common/popupcmn.cpp
++++ b/src/common/popupcmn.cpp
+@@ -372,7 +372,7 @@ bool wxPopupTransientWindow::Show( bool show )
+     }
+ #endif
+ 
+-#if defined( __WXMAC__)
++#if defined(__WXMAC__) || defined( __WXWASM__ )
+     if (!show && m_child && m_child->HasCapture())
+     {
+         m_child->ReleaseMouse();
+@@ -432,7 +432,7 @@ bool wxPopupTransientWindow::Show( bool show )
+     }
+ #endif
+ 
+-#if defined( __WXMAC__)
++#if defined(__WXMAC__) || defined(__WXWASM__)
+     if (show && m_child)
+     {
+         // Assume that the mouse is outside the popup to begin with
+@@ -577,6 +577,7 @@ void wxPopupWindowHandler::OnLeftDown(wxMouseEvent& event)
+                 wxMouseEvent event2(event);
+ 
+                 m_popup->ClientToScreen(&event2.m_x, &event2.m_y);
++                bool sendClickToUnderlying = m_popup->ShouldSendClickToUnderlyingOnDismiss();
+ 
+                 // clicking outside a popup dismisses it
+                 m_popup->DismissAndNotify();
+@@ -585,7 +586,7 @@ void wxPopupWindowHandler::OnLeftDown(wxMouseEvent& event)
+                 // should be able to dismiss it and press the button with the
+                 // same click, so repost this event to the window beneath us
+                 wxWindow *winUnder = wxFindWindowAtPoint(event2.GetPosition());
+-                if ( winUnder )
++                if ( winUnder && sendClickToUnderlying )
+                 {
+                     // translate the event coords to the ones of the window
+                     // which is going to get the event
+diff --git a/src/common/statboxcmn.cpp b/src/common/statboxcmn.cpp
+index 110199a490..254d6b86af 100644
+--- a/src/common/statboxcmn.cpp
++++ b/src/common/statboxcmn.cpp
+@@ -38,7 +38,7 @@ wxStaticBoxBase::wxStaticBoxBase()
+ 
+ void wxStaticBoxBase::GetBordersForSizer(int *borderTop, int *borderOther) const
+ {
+-    const int BORDER = FromDIP(5); // FIXME: hardcoded value
++    const int BORDER = FromDIP(12); // FIXME: hardcoded value
+ 
+     if ( m_labelWin )
+     {
+diff --git a/src/common/utilscmn.cpp b/src/common/utilscmn.cpp
+index df45ccc30a..3bb73669a1 100644
+--- a/src/common/utilscmn.cpp
++++ b/src/common/utilscmn.cpp
+@@ -380,6 +380,10 @@ bool wxPlatform::Is(int platform)
+     if (platform == wxPORT_QT)
+         return true;
+ #endif
++#ifdef __WXWASM__
++    if (platform == wxPORT_WASM)
++        return true;
++#endif
+ 
+     if (sm_customPlatforms && sm_customPlatforms->Index(platform) != wxNOT_FOUND)
+         return true;
+@@ -1053,7 +1057,7 @@ bool wxSetDetectableAutoRepeat( bool WXUNUSED(flag) )
+ 
+ #if defined(__WINDOWS__) && !defined(__WXQT__) || \
+     defined(__WXX11__) || defined(__WXGTK__) || defined(__WXMOTIF__) || \
+-    defined(__WXOSX__)
++    defined(__WXOSX__) || defined(__WXWASM__)
+ 
+ // implemented in a port-specific utils source file:
+ bool wxDoLaunchDefaultBrowser(const wxLaunchBrowserParams& params);
+@@ -1351,8 +1355,10 @@ wxWindow* wxGenericFindWindowAtPoint(const wxPoint& pt)
+ #if wxUSE_MSGDLG
+ 
+ int wxMessageBox(const wxString& message, const wxString& caption, long style,
+-                 wxWindow *parent, int WXUNUSED(x), int WXUNUSED(y) )
++                 wxWindow *parent, int WXUNUSED(x), int WXUNUSED(y),
++                 std::function<void (int)> callback)
+ {
++    wxMessageOutputDebug().Output(message);
+     // add the appropriate icon unless this was explicitly disabled by use of
+     // wxICON_NONE
+     if ( !(style & wxICON_NONE) && !(style & wxICON_MASK) )
+@@ -1360,26 +1366,37 @@ int wxMessageBox(const wxString& message, const wxString& caption, long style,
+         style |= style & wxYES ? wxICON_QUESTION : wxICON_INFORMATION;
+     }
+ 
+-    wxMessageDialog dialog(parent, message, caption, style);
+-
+-    int ans = dialog.ShowModal();
+-    switch ( ans )
+-    {
+-        case wxID_OK:
+-            return wxOK;
+-        case wxID_YES:
+-            return wxYES;
+-        case wxID_NO:
+-            return wxNO;
+-        case wxID_CANCEL:
+-            return wxCANCEL;
+-        case wxID_HELP:
+-            return wxHELP;
+-    }
++    wxMessageDialog *dialog = new wxMessageDialog(parent, message, caption, style);
+ 
+-    wxFAIL_MSG( wxT("unexpected return code from wxMessageDialog") );
++    dialog->ShowModal([dialog, callback](int ans) {
++      if (callback)
++      {
++          switch ( ans )
++          {
++              case wxID_OK:
++                  callback(wxOK);
++                  break;
++              case wxID_YES:
++                  callback(wxYES);
++                  break;
++              case wxID_NO:
++                  callback(wxNO);
++                  break;
++              case wxID_CANCEL:
++                  callback(wxCANCEL);
++                  break;
++              case wxID_HELP:
++                  callback(wxHELP);
++                  break;
++              default:
++                  wxFAIL_MSG( wxT("unexpected return code from wxMessageDialog") );
++                  break;
++          }
++      }
++      dialog->Destroy();
++  });
+ 
+-    return wxCANCEL;
++  return wxCANCEL;
+ }
+ 
+ wxVersionInfo wxGetLibraryVersionInfo()
+diff --git a/src/common/wincmn.cpp b/src/common/wincmn.cpp
+index c43f6f813d..cafd2578e4 100644
+--- a/src/common/wincmn.cpp
++++ b/src/common/wincmn.cpp
+@@ -3033,16 +3033,29 @@ bool wxWindowBase::PopupMenu(wxMenu *menu, int x, int y)
+ {
+     wxCHECK_MSG( menu, false, "can't popup NULL menu" );
+ 
++/*
+     wxMenuInvokingWindowSetter
+         setInvokingWin(*menu, static_cast<wxWindow *>(this));
++*/
++    menu->SetInvokingWindow(static_cast<wxWindow *>(this));
+ 
+     wxCurrentPopupMenu = menu;
+     const bool rc = DoPopupMenu(menu, x, y);
+-    wxCurrentPopupMenu = NULL;
++    //wxCurrentPopupMenu = NULL;
+ 
+     return rc;
+ }
+ 
++void wxWindowBase::PopupMenu(wxMenu *menu, int x, int y, std::function<void (bool)> callback)
++{
++    wxCHECK_RET( menu, "can't popup NULL menu" );
++
++    menu->SetInvokingWindow(static_cast<wxWindow *>(this));
++
++    wxCurrentPopupMenu = menu;
++    DoPopupMenu(menu, x, y, callback);
++}
++
+ // this is used to pass the id of the selected item from the menu event handler
+ // to the main function itself
+ //
+@@ -3342,8 +3355,8 @@ void wxWindowBase::CaptureMouse()
+     wxRecursionGuard guard(wxMouseCapture::changing);
+     wxASSERT_MSG( !guard.IsInside(), wxT("recursive CaptureMouse call?") );
+ 
+-    wxASSERT_MSG( !wxMouseCapture::IsInCaptureStack(this),
+-                    "Recapturing the mouse in the same window?" );
++    //wxASSERT_MSG( !wxMouseCapture::IsInCaptureStack(this),
++    //                "Recapturing the mouse in the same window?" );
+ 
+     wxWindow *winOld = GetCapture();
+     if ( winOld )
+diff --git a/src/generic/caret.cpp b/src/generic/caret.cpp
+index 4b3bb6c3a4..06b2f49a08 100644
+--- a/src/generic/caret.cpp
++++ b/src/generic/caret.cpp
+@@ -101,7 +101,7 @@ void wxCaret::InitGeneric()
+     m_xOld =
+     m_yOld = -1;
+     if (m_width && m_height)
+-        m_bmpUnderCaret.Create(m_width, m_height);
++        m_bmpUnderCaret.CreateScaled(m_width, m_height, wxBITMAP_SCREEN_DEPTH, wxContentScaleFactor());
+ #endif
+ }
+ 
+@@ -173,7 +173,7 @@ void wxCaret::DoSize()
+ #else
+     // Change bitmap size
+     if (m_width && m_height)
+-        m_bmpUnderCaret = wxBitmap(m_width, m_height);
++        m_bmpUnderCaret.CreateScaled(m_width, m_height, wxBITMAP_SCREEN_DEPTH, wxContentScaleFactor());
+     else
+         m_bmpUnderCaret = wxBitmap();
+ #endif
+@@ -241,6 +241,26 @@ void wxCaret::Refresh()
+         DoDraw( &dcWin, GetWindow() );
+     }
+ #else
++    dcWin.SetPen(*wxTRANSPARENT_PEN);
++    if ( m_blinkedOut )
++    {
++        dcWin.SetBrush(*wxWHITE);
++        dcWin.DrawRectangle(m_xOld, m_yOld, m_width, m_height);
++        m_xOld =
++        m_yOld = -1;
++    }
++    else
++    {
++        if ( m_xOld == -1 && m_yOld == -1 )
++        {
++            m_xOld = m_x;
++            m_yOld = m_y;
++        }
++
++        dcWin.SetBrush(*wxBLACK);
++        dcWin.DrawRectangle(m_x, m_y, m_width, m_height);
++    }
++/*
+     wxMemoryDC dcMem;
+     dcMem.SelectObject(m_bmpUnderCaret);
+     if ( m_blinkedOut )
+@@ -268,6 +288,7 @@ void wxCaret::Refresh()
+         // and draw the caret there
+         DoDraw(&dcWin, GetWindow());
+     }
++*/
+ #endif
+ }
+ 
+@@ -287,6 +308,7 @@ void wxCaret::DoDraw(wxDC *dc, wxWindow* win)
+         }
+     }
+     dc->SetPen( pen );
++    dc->SetPen(*wxTRANSPARENT_PEN);
+     dc->SetBrush(m_hasFocus ? brush : *wxTRANSPARENT_BRUSH);
+ 
+     // VZ: unfortunately, the rectangle comes out a pixel smaller when this is
+diff --git a/src/generic/filedlgg.cpp b/src/generic/filedlgg.cpp
+index 5929901511..f70f5f7e14 100644
+--- a/src/generic/filedlgg.cpp
++++ b/src/generic/filedlgg.cpp
+@@ -336,6 +336,7 @@ void wxGenericFileDialog::OnOk( wxCommandEvent &WXUNUSED(event) )
+     if ( HasFdFlag(wxFD_SAVE) && HasFdFlag(wxFD_OVERWRITE_PROMPT) &&
+                 wxFileExists(path) )
+     {
++/*
+         if ( wxMessageBox
+              (
+                 wxString::Format
+@@ -347,6 +348,7 @@ void wxGenericFileDialog::OnOk( wxCommandEvent &WXUNUSED(event) )
+                 wxYES_NO
+              ) != wxYES)
+             return;
++*/
+     }
+     else if ( HasFdFlag(wxFD_OPEN) && HasFdFlag(wxFD_FILE_MUST_EXIST) &&
+                     !wxFileExists(path) )
+diff --git a/src/generic/grid.cpp b/src/generic/grid.cpp
+index 41fd4524cf..b0a55db5e0 100644
+--- a/src/generic/grid.cpp
++++ b/src/generic/grid.cpp
+@@ -312,12 +312,12 @@ void wxGridRowHeaderRendererDefault::DrawBorder(const wxGrid& grid,
+                                                 wxDC& dc,
+                                                 wxRect& rect) const
+ {
+-    dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DDKSHADOW)));
++    dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT)));
+     dc.DrawLine(rect.GetRight(), rect.GetTop(),
+                 rect.GetRight(), rect.GetBottom());
+ 
+     dc.DrawLine(rect.GetLeft(), rect.GetBottom(),
+-                rect.GetRight() + 1, rect.GetBottom());
++                rect.GetRight(), rect.GetBottom());
+ 
+     // Only draw the external borders when the containing control doesn't have
+     // any border, otherwise they would compound with the outer border which
+@@ -331,11 +331,13 @@ void wxGridRowHeaderRendererDefault::DrawBorder(const wxGrid& grid,
+         ofs = 1;
+     }
+ 
++/*
+     dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT)));
+     dc.DrawLine(rect.GetLeft() + ofs, rect.GetTop(),
+                 rect.GetLeft() + ofs, rect.GetBottom());
+     dc.DrawLine(rect.GetLeft() + ofs, rect.GetTop(),
+                 rect.GetRight(), rect.GetTop());
++*/
+ 
+     rect.Deflate(1 + ofs);
+ }
+@@ -344,11 +346,11 @@ void wxGridColumnHeaderRendererDefault::DrawBorder(const wxGrid& grid,
+                                                    wxDC& dc,
+                                                    wxRect& rect) const
+ {
+-    dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DDKSHADOW)));
++    dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT)));
+     dc.DrawLine(rect.GetRight(), rect.GetTop(),
+                 rect.GetRight(), rect.GetBottom());
+     dc.DrawLine(rect.GetLeft(), rect.GetBottom(),
+-                rect.GetRight() + 1, rect.GetBottom());
++                rect.GetRight(), rect.GetBottom());
+ 
+     // As above, don't draw the outer border if the control has its own one.
+     int ofs = 0;
+@@ -360,11 +362,13 @@ void wxGridColumnHeaderRendererDefault::DrawBorder(const wxGrid& grid,
+         ofs = 1;
+     }
+ 
++/*
+     dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT)));
+     dc.DrawLine(rect.GetLeft(), rect.GetTop() + ofs,
+                 rect.GetLeft(), rect.GetBottom());
+     dc.DrawLine(rect.GetLeft(), rect.GetTop() + ofs,
+                 rect.GetRight(), rect.GetTop() + ofs);
++*/
+ 
+     rect.Deflate(1 + ofs);
+ }
+@@ -373,7 +377,7 @@ void wxGridCornerHeaderRendererDefault::DrawBorder(const wxGrid& grid,
+                                                    wxDC& dc,
+                                                    wxRect& rect) const
+ {
+-    dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DDKSHADOW)));
++    dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT)));
+     dc.DrawLine(rect.GetRight() - 1, rect.GetBottom() - 1,
+                 rect.GetRight() - 1, rect.GetTop());
+     dc.DrawLine(rect.GetRight() - 1, rect.GetBottom() - 1,
+@@ -392,11 +396,13 @@ void wxGridCornerHeaderRendererDefault::DrawBorder(const wxGrid& grid,
+         ofs = 1;
+     }
+ 
++/*
+     dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT)));
+     dc.DrawLine(rect.GetLeft() + 1, rect.GetTop() + ofs,
+                 rect.GetRight() - 1, rect.GetTop() + ofs);
+     dc.DrawLine(rect.GetLeft() + ofs, rect.GetTop() + ofs,
+                 rect.GetLeft() + ofs, rect.GetBottom() - 1);
++*/
+ 
+     rect.Deflate(1 + ofs);
+ }
+@@ -7437,6 +7443,7 @@ void wxGrid::ShowCellEditControl()
+     {
+         if ( !IsVisible( m_currentCellCoords, false ) )
+         {
++            HideCellEditControl();
+             m_cellEditCtrlEnabled = false;
+             return;
+         }
+diff --git a/src/generic/gridctrl.cpp b/src/generic/gridctrl.cpp
+index 668151a520..5a50354d45 100644
+--- a/src/generic/gridctrl.cpp
++++ b/src/generic/gridctrl.cpp
+@@ -52,7 +52,7 @@ void wxGridCellRenderer::Draw(wxGrid& grid,
+             if ( grid.HasFocus() )
+                 clr = grid.GetSelectionBackground();
+             else
+-                clr = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW);
++                clr = wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+         }
+         else
+         {
+@@ -87,7 +87,7 @@ void wxGridCellRenderer::SetTextColoursAndFont(const wxGrid& grid,
+             if ( grid.HasFocus() )
+                 clr = grid.GetSelectionBackground();
+             else
+-                clr = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW);
++                clr = wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+             dc.SetTextBackground( clr );
+             dc.SetTextForeground( grid.GetSelectionForeground() );
+         }
+diff --git a/src/generic/listctrl.cpp b/src/generic/listctrl.cpp
+index 1810bb19f3..29c5cd0335 100644
+--- a/src/generic/listctrl.cpp
++++ b/src/generic/listctrl.cpp
+@@ -5691,7 +5691,7 @@ wxGenericListCtrl::GetClassDefaultAttributes(wxWindowVariant variant)
+     wxUnusedVar(variant);
+     wxVisualAttributes attr;
+     attr.colFg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT);
+-    attr.colBg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX);
++    attr.colBg = *wxWHITE; //wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX);
+     attr.font  = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+     return attr;
+ #endif
+diff --git a/src/generic/msgdlgg.cpp b/src/generic/msgdlgg.cpp
+index b379503cef..0ad95d3fb9 100644
+--- a/src/generic/msgdlgg.cpp
++++ b/src/generic/msgdlgg.cpp
+@@ -271,4 +271,15 @@ int wxGenericMessageDialog::ShowModal()
+     return wxMessageDialogBase::ShowModal();
+ }
+ 
++void wxGenericMessageDialog::ShowModal(std::function<void (int)> callback)
++{
++    if ( !m_created )
++    {
++        m_created = true;
++        DoCreateMsgdialog();
++    }
++
++    return wxMessageDialogBase::ShowModal(callback);
++}
++
+ #endif // wxUSE_MSGDLG
+diff --git a/src/generic/renderg.cpp b/src/generic/renderg.cpp
+index 8425f08953..42f562282e 100644
+--- a/src/generic/renderg.cpp
++++ b/src/generic/renderg.cpp
+@@ -260,7 +260,7 @@ wxRendererGeneric* wxRendererGeneric::sm_rendererGeneric = NULL;
+ 
+ wxRendererGeneric::wxRendererGeneric()
+     : m_penBlack(wxSystemSettings::GetColour(wxSYS_COLOUR_3DDKSHADOW)),
+-      m_penDarkGrey(wxSystemSettings::GetColour(wxSYS_COLOUR_3DSHADOW)),
++      m_penDarkGrey(wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT)),
+       m_penLightGrey(wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE)),
+       m_penHighlight(wxSystemSettings::GetColour(wxSYS_COLOUR_3DHIGHLIGHT))
+ {
+@@ -315,10 +315,11 @@ wxRendererGeneric::DrawHeaderButton(wxWindow* win,
+ 
+     dc.SetBrush(*wxTRANSPARENT_BRUSH);
+ 
+-    dc.SetPen(m_penBlack);
++    dc.SetPen(m_penDarkGrey);
+     dc.DrawLine( x+w-1, y, x+w-1, y+h );  // right (outer)
+     dc.DrawLine( x, y+h-1, x+w, y+h-1 );  // bottom (outer)
+ 
++/*
+     dc.SetPen(m_penDarkGrey);
+     dc.DrawLine( x+w-2, y+1, x+w-2, y+h-1 );  // right (inner)
+     dc.DrawLine( x+1, y+h-2, x+w-1, y+h-2 );  // bottom (inner)
+@@ -326,6 +327,7 @@ wxRendererGeneric::DrawHeaderButton(wxWindow* win,
+     dc.SetPen(m_penHighlight);
+     dc.DrawLine( x, y, x, y+h-1 ); // left (outer)
+     dc.DrawLine( x, y, x+w-1, y ); // top (outer)
++*/
+ 
+     return DrawHeaderButtonContents(win, dc, rect, flags, sortArrow, params);
+ }
+@@ -814,7 +816,7 @@ wxRendererGeneric::DrawItemSelectionRect(wxWindow * WXUNUSED(win),
+         }
+         else // !focused
+         {
+-            brush = wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW));
++            brush = wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
+         }
+     }
+     else // !selected
+@@ -826,7 +828,8 @@ wxRendererGeneric::DrawItemSelectionRect(wxWindow * WXUNUSED(win),
+     bool drawFocusRect = (flags & wxCONTROL_CURRENT) && (flags & wxCONTROL_FOCUSED);
+ 
+     if ( drawFocusRect && !(flags & wxCONTROL_CELL) )
+-        dc.SetPen( *wxBLACK_PEN );
++        dc.SetPen(*wxTRANSPARENT_PEN);
++        //dc.SetPen( *wxBLACK_PEN );
+     else
+         dc.SetPen( *wxTRANSPARENT_PEN );
+ 
+diff --git a/src/generic/spinctlg.cpp b/src/generic/spinctlg.cpp
+index 28393d38fa..b04cf8f6f4 100644
+--- a/src/generic/spinctlg.cpp
++++ b/src/generic/spinctlg.cpp
+@@ -53,7 +53,7 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxSpinDoubleEvent, wxNotifyEvent);
+ // so the generic control looks similarly to the native one there, we might
+ // need to use different value for the other platforms (and maybe even
+ // determine it dynamically?).
+-static const wxCoord MARGIN = 1;
++static const wxCoord MARGIN = 0;
+ 
+ #define SPINCTRLBUT_MAX 32000 // large to avoid wrap around trouble
+ 
+@@ -314,11 +314,15 @@ void wxSpinCtrlGenericBase::DoMoveWindow(int x, int y, int width, int height)
+     // that the control should be. Normally, GetBestSize and GetSize should
+     // always return the same value because the size of the spinButton never
+     // changes.
+-    wxSize sizeBtn = m_spinButton->GetBestSize();
+ 
+-    wxCoord wText = width - sizeBtn.x - MARGIN;
+-    m_textCtrl->SetSize(0, 0, wText, height);
+-    m_spinButton->SetSize(0 + wText + MARGIN, 0, wxDefaultCoord, height);
++    if (m_spinButton)
++    {
++        wxSize sizeBtn = m_spinButton->GetBestSize();
++
++        wxCoord wText = width - sizeBtn.x - MARGIN;
++        m_textCtrl->SetSize(0, 0, wText, height);
++        m_spinButton->SetSize(0 + wText + MARGIN, 0, sizeBtn.x, height);
++    }
+ }
+ 
+ // ----------------------------------------------------------------------------
+diff --git a/src/generic/stattextg.cpp b/src/generic/stattextg.cpp
+index 022dcbfb66..085adef9ca 100644
+--- a/src/generic/stattextg.cpp
++++ b/src/generic/stattextg.cpp
+@@ -91,7 +91,7 @@ wxSize wxGenericStaticText::DoGetBestClientSize() const
+         return m_markupText->Measure(dc);
+ #endif // wxUSE_MARKUP
+ 
+-    return dc.GetMultiLineTextExtent(GetLabel());
++    return dc.GetMultiLineTextExtent(GetLabelText());
+ }
+ 
+ void wxGenericStaticText::SetLabel(const wxString& label)
+diff --git a/src/generic/treectlg.cpp b/src/generic/treectlg.cpp
+index 7827873070..2e0ceadf24 100644
+--- a/src/generic/treectlg.cpp
++++ b/src/generic/treectlg.cpp
+@@ -931,8 +931,8 @@ void wxGenericTreeCtrl::Init()
+     m_dirty = false;
+ 
+     m_lineHeight = 10;
+-    m_indent = 15;
+-    m_spacing = 18;
++    m_indent = 10;
++    m_spacing = 10;
+ 
+     m_imageListButtons = NULL;
+     m_ownsImageListButtons = false;
+@@ -1037,7 +1037,7 @@ void wxGenericTreeCtrl::InitVisualAttributes()
+     m_hilightBrush = wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
+     m_hilightUnfocusedBrush = wxBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW));
+ 
+-    m_dottedPen = wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT), 1, wxPENSTYLE_DOT);
++    m_dottedPen = wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT), 1, wxPENSTYLE_TRANSPARENT);
+ 
+ #if defined(__WXOSX__)
+     m_normalFont = wxFont(wxOSX_SYSTEM_FONT_VIEWS);
+diff --git a/src/generic/vlbox.cpp b/src/generic/vlbox.cpp
+index 860203fc85..529a899101 100644
+--- a/src/generic/vlbox.cpp
++++ b/src/generic/vlbox.cpp
+@@ -85,7 +85,8 @@ bool wxVListBox::Create(wxWindow *parent,
+ 
+     // make sure the native widget has the right colour since we do
+     // transparent drawing by default
+-    SetBackgroundColour(GetBackgroundColour());
++    //SetBackgroundColour(GetBackgroundColour());
++    SetBackgroundColour(*wxWHITE);
+ 
+     // leave m_colBgSel in an invalid state: it means for OnDrawBackground()
+     // to use wxRendererNative instead of painting selection bg ourselves
+diff --git a/src/univ/anybutton.cpp b/src/univ/anybutton.cpp
+index 0011bf8f2c..f6deb129de 100644
+--- a/src/univ/anybutton.cpp
++++ b/src/univ/anybutton.cpp
+@@ -52,12 +52,13 @@ void wxAnyButton::Toggle()
+     else
+         Press();
+ 
++    Refresh();
++
+     if ( !m_isPressed )
+     {
+         // releasing button after it had been pressed generates a click event
+         Click();
+     }
+-    Refresh();
+ }
+ 
+ bool wxAnyButton::PerformAction(const wxControlAction& action,
+@@ -94,7 +95,7 @@ wxSize wxAnyButton::DoGetBestClientSize() const
+ {
+     wxClientDC dc(wxConstCast(this, wxAnyButton));
+     wxCoord width, height;
+-    dc.GetMultiLineTextExtent(GetLabel(), &width, &height);
++    dc.GetMultiLineTextExtent(GetLabelText(), &width, &height);
+ 
+     if ( m_bitmap.IsOk() )
+     {
+diff --git a/src/univ/checkbox.cpp b/src/univ/checkbox.cpp
+index ed10526c55..e27a3f1070 100644
+--- a/src/univ/checkbox.cpp
++++ b/src/univ/checkbox.cpp
+@@ -158,7 +158,7 @@ void wxCheckBox::DoDraw(wxControlRenderer *renderer)
+ 
+     renderer->GetRenderer()->
+         DrawCheckButton(dc,
+-                        GetLabel(),
++                        GetLabelText(),
+                         bitmap,
+                         renderer->GetRect(),
+                         flags,
+@@ -183,7 +183,7 @@ wxSize wxCheckBox::DoGetBestClientSize() const
+     wxClientDC dc(wxConstCast(this, wxCheckBox));
+     dc.SetFont(GetFont());
+     wxCoord width, height;
+-    dc.GetMultiLineTextExtent(GetLabel(), &width, &height);
++    dc.GetMultiLineTextExtent(GetLabelText(), &width, &height);
+ 
+     wxSize sizeBmp = GetBitmapSize();
+     if ( height < sizeBmp.y )
+diff --git a/src/univ/ctrlrend.cpp b/src/univ/ctrlrend.cpp
+index 6039922384..e369efa252 100644
+--- a/src/univ/ctrlrend.cpp
++++ b/src/univ/ctrlrend.cpp
+@@ -69,13 +69,12 @@ void wxControlRenderer::DrawLabel()
+     m_dc.SetFont(m_window->GetFont());
+     m_dc.SetTextForeground(m_window->GetForegroundColour());
+ 
+-    wxString label = m_window->GetLabel();
+-    if ( !label.empty() )
++    if ( !m_window->GetLabel().empty() )
+     {
+         wxControl *ctrl = wxStaticCast(m_window, wxControl);
+ 
+         m_renderer->DrawLabel(m_dc,
+-                              label,
++                              ctrl->GetLabelText(),
+                               m_rect,
+                               m_window->GetStateFlags(),
+                               ctrl->GetAlignment(),
+@@ -90,8 +89,7 @@ void wxControlRenderer::DrawButtonLabel(const wxBitmap& bitmap,
+     m_dc.SetFont(m_window->GetFont());
+     m_dc.SetTextForeground(m_window->GetForegroundColour());
+ 
+-    wxString label = m_window->GetLabel();
+-    if ( !label.empty() || bitmap.IsOk() )
++    if ( !m_window->GetLabel().empty() || bitmap.IsOk() )
+     {
+         wxRect rectLabel = m_rect;
+         if ( bitmap.IsOk() )
+@@ -102,7 +100,7 @@ void wxControlRenderer::DrawButtonLabel(const wxBitmap& bitmap,
+         wxControl *ctrl = wxStaticCast(m_window, wxControl);
+ 
+         m_renderer->DrawButtonLabel(m_dc,
+-                                    label,
++                                    ctrl->GetLabelText(),
+                                     bitmap,
+                                     rectLabel,
+                                     m_window->GetStateFlags(),
+@@ -120,7 +118,7 @@ void wxControlRenderer::DrawFrame()
+     wxControl *ctrl = wxStaticCast(m_window, wxControl);
+ 
+     m_renderer->DrawFrame(m_dc,
+-                          m_window->GetLabel(),
++                          ctrl->GetLabelText(),
+                           m_rect,
+                           m_window->GetStateFlags(),
+                           ctrl->GetAlignment(),
+diff --git a/src/univ/descrip.mms b/src/univ/descrip.mms
+index 153c5b42b0..0d63f71c99 100644
+--- a/src/univ/descrip.mms
++++ b/src/univ/descrip.mms
+@@ -59,6 +59,7 @@ OBJECTS = anybutton.obj,\
+ 		metal.obj,\
+ 		radiobox.obj,\
+ 		scrthumb.obj,\
++		wasm.obj,\
+ 		win32.obj
+ 
+ SOURCES =anybutton.cpp\
+@@ -100,6 +101,7 @@ SOURCES =anybutton.cpp\
+ 		scrthumb.cpp \
+ 		[.themes]gtk.cpp \
+ 		[.themes]metal.cpp \
++		[.themes]wasm.cpp \
+ 		[.themes]win32.cpp
+    
+ all : $(SOURCES)
+@@ -150,5 +152,7 @@ metal.obj : [.themes]metal.cpp
+ 	cxx $(CXXFLAGS)$(CXX_DEFINE) [.themes]metal.cpp
+ radiobox.obj : radiobox.cpp
+ scrthumb.obj : scrthumb.cpp
++wasm.obj : [.themes]wasm.cpp
++	cxx $(CXXFLAGS)$(CXX_DEFINE) [.themes]wasm.cpp
+ win32.obj : [.themes]win32.cpp
+ 	cxx $(CXXFLAGS)$(CXX_DEFINE) [.themes]win32.cpp
+diff --git a/src/univ/dialog.cpp b/src/univ/dialog.cpp
+index 8de1a92a5d..da54b6820d 100644
+--- a/src/univ/dialog.cpp
++++ b/src/univ/dialog.cpp
+@@ -27,6 +27,8 @@
+ #include "wx/evtloop.h"
+ #include "wx/modalhook.h"
+ 
++#include <emscripten.h>
++
+ //-----------------------------------------------------------------------------
+ // wxDialog
+ //-----------------------------------------------------------------------------
+@@ -43,6 +45,7 @@ void wxDialog::Init()
+     m_returnCode = 0;
+     m_windowDisabler = NULL;
+     m_eventLoop = NULL;
++    m_modalCallback = NULL;
+     m_isShowingModal = false;
+ }
+ 
+@@ -160,6 +163,26 @@ bool wxDialog::IsModal() const
+     return m_isShowingModal;
+ }
+ 
++EM_JS(int, startModal, (), {
++  return Asyncify.handleAsync(async () => {
++    console.log('startModal');
++
++    var runEventLoop = function () {
++      modalTimer = setTimeout(function () {
++        ccall('ProcessEvents', 'void', [], []);
++        runEventLoop();
++      }, 17);
++    };
++
++    const result = await new Promise((resolve, reject) => {
++      runEventLoop();
++      endModal = resolve;
++    });
++    console.log('modal result: ' + result);
++    return result;
++  });
++});
++
+ int wxDialog::ShowModal()
+ {
+     WX_HOOK_MODAL_DIALOG();
+@@ -182,12 +205,15 @@ int wxDialog::ShowModal()
+ 
+     m_isShowingModal = true;
+ 
++    //int result = startModal();
++
++    return wxID_CANCEL;
++/*
+     wxASSERT_MSG( !m_windowDisabler, wxT("disabling windows twice?") );
+ 
+ #if defined(__WXGTK__)
+     wxBusyCursorSuspender suspender;
+ #endif
+-
+     m_windowDisabler = new wxWindowDisabler(this);
+     if ( !m_eventLoop )
+         m_eventLoop = new wxEventLoop;
+@@ -195,11 +221,20 @@ int wxDialog::ShowModal()
+     m_eventLoop->Run();
+ 
+     return GetReturnCode();
++*/
++}
++
++void wxDialog::ShowModal(std::function<void (int)> callback)
++{
++    ShowModal();
++
++    m_modalCallback = callback;
+ }
+ 
+ void wxDialog::EndModal(int retCode)
+ {
+-    wxASSERT_MSG( m_eventLoop, wxT("wxDialog is not modal") );
++    wxLogDebug(wxT("EndModal: %d"), retCode);
++    //wxASSERT_MSG( m_eventLoop, wxT("wxDialog is not modal") );
+ 
+     SetReturnCode(retCode);
+ 
+@@ -211,7 +246,21 @@ void wxDialog::EndModal(int retCode)
+ 
+     m_isShowingModal = false;
+ 
+-    m_eventLoop->Exit();
++    //m_eventLoop->Exit();
++
++/*
++    EM_ASM({
++        clearTimeout(modalTimer);
++        endModal($0);
++    }, retCode);
++*/
+ 
+     Show(false);
++
++    if (m_modalCallback)
++    {
++        auto callback = m_modalCallback;
++        m_modalCallback = NULL;
++        callback(retCode);
++    }
+ }
+diff --git a/src/univ/menu.cpp b/src/univ/menu.cpp
+index 4dcce95c49..362086ea9c 100644
+--- a/src/univ/menu.cpp
++++ b/src/univ/menu.cpp
+@@ -32,6 +32,7 @@
+     #include "wx/log.h"
+     #include "wx/frame.h"
+     #include "wx/dcclient.h"
++    #include "wx/timer.h"
+ #endif // WX_PRECOMP
+ 
+ #include "wx/popupwin.h"
+@@ -43,6 +44,10 @@
+     #include "wx/msw/private.h"
+ #endif // __WXMSW__
+ 
++#define SUBMENU_TIMEOUT 50
++#define OVERFLOW_INITIAL_TIMEOUT 100
++#define OVERFLOW_REPEAT_TIMEOUT 10
++
+ typedef wxMenuItemList::compatibility_iterator wxMenuItemIter;
+ 
+ // ----------------------------------------------------------------------------
+@@ -114,6 +119,11 @@ private:
+ 
+ WX_DEFINE_OBJARRAY(wxMenuInfoArray);
+ 
++enum {
++  wxID_SUBMENU_TIMER,
++  wxID_OVERFLOW_TIMER
++};
++
+ // ----------------------------------------------------------------------------
+ // wxPopupMenuWindow: a popup window showing a menu
+ // ----------------------------------------------------------------------------
+@@ -141,6 +151,10 @@ public:
+     void OnIdle(wxIdleEvent& WXUNUSED(event)) { }
+ #endif
+ 
++    void OnSubMenuTimer(wxTimerEvent& event);
++
++    void OnOverflowTimer(wxTimerEvent& event);
++
+     // get the currently selected item (may be NULL)
+     wxMenuItem *GetCurrentItem() const
+     {
+@@ -165,6 +179,12 @@ public:
+     // don't dismiss the popup window if the parent menu was clicked
+     virtual bool ProcessLeftDown(wxMouseEvent& event);
+ 
++    virtual bool ShouldSendClickToUnderlyingOnDismiss() const { return false; }
++
++    wxCoord GetMaxClientHeight() const {
++        return wxGetClientDisplayRect().GetSize().y - GetScreenPosition().y - GetClientAreaOrigin().y;
++    }
++
+ protected:
+     // how did we perform this operation?
+     enum InputMethod
+@@ -183,8 +203,11 @@ protected:
+     void OnLeftUp(wxMouseEvent& event);
+     void OnMouseMove(wxMouseEvent& event);
+     void OnMouseLeave(wxMouseEvent& event);
++    void OnMouseWheel(wxMouseEvent& event);
+     void OnKeyDown(wxKeyEvent& event);
+ 
++    bool IsPointTrackingToSubMenu(const wxPoint& target);
++
+     // reset the current item and node
+     void ResetCurrent();
+ 
+@@ -233,6 +256,41 @@ protected:
+     // get next node after the given one, wrapping if it's the last one
+     wxMenuItemIter GetNextNode(wxMenuItemIter node) const;
+ 
++    bool HasOverflow() const { return GetClientSize().y > GetMaxClientHeight(); }
++
++    bool HasOverflowArrowUp() const
++    {
++        return HasOverflow() && GetOffsetY() < 0;
++    }
++
++    bool HasOverflowArrowDown() const
++    {
++        return HasOverflow() && GetClientSize().y + GetOffsetY() > GetMaxClientHeight();
++    }
++
++    wxRect GetOverflowArrowUpRect(const wxMenuGeometryInfo& gi) const
++    {
++        return wxRect(0, 0, gi.GetSize().x, gi.GetOverflowHeight());
++    }
++
++    wxRect GetOverflowArrowDownRect(const wxMenuGeometryInfo& gi) const
++    {
++        wxCoord y = GetMaxClientHeight() - gi.GetOverflowHeight();
++        return wxRect(0, y, gi.GetSize().x, gi.GetOverflowHeight());
++    }
++
++    bool OverflowArrowHitTest(const wxPoint&) const;
++
++    int GetOffsetY() const { return m_offsetY; }
++    void SetOffsetY(int offset)
++    {
++        if (offset != m_offsetY)
++        {
++            m_offsetY = offset;
++            Refresh();
++        }
++    }
++
+ private:
+     // the menu we show
+     wxMenu *m_menu;
+@@ -243,6 +301,12 @@ private:
+     // do we currently have an opened submenu?
+     bool m_hasOpenSubMenu;
+ 
++    wxPoint m_subMenuPoint;
++    wxTimer m_subMenuTimer;
++    wxTimer m_overflowTimer;
++
++    int m_offsetY;
++
+     wxDECLARE_EVENT_TABLE();
+ };
+ 
+@@ -282,10 +346,13 @@ wxBEGIN_EVENT_TABLE(wxPopupMenuWindow, wxPopupTransientWindow)
+ 
+     EVT_LEFT_UP(wxPopupMenuWindow::OnLeftUp)
+     EVT_MOTION(wxPopupMenuWindow::OnMouseMove)
++    EVT_MOUSEWHEEL(wxPopupMenuWindow::OnMouseWheel)
+     EVT_LEAVE_WINDOW(wxPopupMenuWindow::OnMouseLeave)
+ #ifdef __WXMSW__
+     EVT_IDLE(wxPopupMenuWindow::OnIdle)
+ #endif
++    EVT_TIMER(wxID_SUBMENU_TIMER, wxPopupMenuWindow::OnSubMenuTimer)
++    EVT_TIMER(wxID_OVERFLOW_TIMER, wxPopupMenuWindow::OnOverflowTimer)
+ wxEND_EVENT_TABLE()
+ 
+ wxBEGIN_EVENT_TABLE(wxMenuBar, wxMenuBarBase)
+@@ -294,6 +361,7 @@ wxBEGIN_EVENT_TABLE(wxMenuBar, wxMenuBarBase)
+     EVT_KEY_DOWN(wxMenuBar::OnKeyDown)
+ 
+     EVT_LEFT_DOWN(wxMenuBar::OnLeftDown)
++    EVT_LEFT_DCLICK(wxMenuBar::OnLeftDown)
+     EVT_MOTION(wxMenuBar::OnMouseMove)
+ wxEND_EVENT_TABLE()
+ 
+@@ -310,9 +378,14 @@ wxPopupMenuWindow::wxPopupMenuWindow(wxWindow *parent, wxMenu *menu)
+     m_menu = menu;
+     m_hasOpenSubMenu = false;
+ 
++    m_subMenuTimer.SetOwner(this, wxID_SUBMENU_TIMER);
++    m_overflowTimer.SetOwner(this, wxID_OVERFLOW_TIMER);
++
++    m_offsetY = 0;
++
+     ResetCurrent();
+ 
+-    (void)Create(parent, wxBORDER_RAISED);
++    (void)Create(parent, wxBORDER_STATIC);
+ 
+     SetCursor(wxCURSOR_ARROW);
+ }
+@@ -343,8 +416,11 @@ void wxPopupMenuWindow::SetCurrentItem(wxMenuItemIter node)
+ 
+ void wxPopupMenuWindow::ChangeCurrent(wxMenuItemIter node)
+ {
+-    if ( !m_nodeCurrent || !node || (node != m_nodeCurrent) )
++    if ( node != m_nodeCurrent )
+     {
++        m_subMenuTimer.Stop();
++        m_overflowTimer.Stop();
++
+         wxMenuItemIter nodeOldCurrent = m_nodeCurrent;
+ 
+         m_nodeCurrent = node;
+@@ -508,9 +584,10 @@ wxPopupMenuWindow::GetMenuItemFromPoint(const wxPoint& pt) const
+ {
+     // we only use the y coord normally, but still check x in case the point is
+     // outside the window completely
+-    if ( wxWindow::HitTest(pt) == wxHT_WINDOW_INSIDE )
++    if ( wxWindow::HitTest(pt) == wxHT_WINDOW_INSIDE &&
++         !OverflowArrowHitTest(pt) )
+     {
+-        wxCoord y = 0;
++        wxCoord y = GetOffsetY();
+         for ( wxMenuItemIter node = m_menu->GetMenuItems().GetFirst();
+               node;
+               node = node->GetNext() )
+@@ -528,6 +605,26 @@ wxPopupMenuWindow::GetMenuItemFromPoint(const wxPoint& pt) const
+     return wxMenuItemIter();
+ }
+ 
++bool wxPopupMenuWindow::OverflowArrowHitTest(const wxPoint& pt) const
++{
++    if (HasOverflowArrowUp())
++    {
++        if (GetOverflowArrowUpRect(m_menu->GetGeometryInfo()).Contains(pt))
++        {
++            return true;
++        }
++    }
++    if (HasOverflowArrowDown())
++    {
++        if (GetOverflowArrowDownRect(m_menu->GetGeometryInfo()).Contains(pt))
++        {
++            return true;
++        }
++    }
++
++    return false;
++}
++
+ // ----------------------------------------------------------------------------
+ // wxPopupMenuWindow drawing
+ // ----------------------------------------------------------------------------
+@@ -553,11 +650,11 @@ void wxPopupMenuWindow::DoDraw(wxControlRenderer *renderer)
+ 
+     // FIXME: this should be done in the renderer, however when it is fixed
+     //        wxPopupMenuWindow::RefreshItem() should be changed too!
+-    dc.SetLogicalOrigin(1, 1);
++    //dc.SetLogicalOrigin(1, 1);
+ 
+     wxRenderer *rend = renderer->GetRenderer();
+ 
+-    wxCoord y = 0;
++    wxCoord y = GetOffsetY();
+     const wxMenuGeometryInfo& gi = m_menu->GetGeometryInfo();
+     for ( wxMenuItemIter node = m_menu->GetMenuItems().GetFirst();
+           node;
+@@ -565,61 +662,75 @@ void wxPopupMenuWindow::DoDraw(wxControlRenderer *renderer)
+     {
+         wxMenuItem *item = node->GetData();
+ 
+-        if ( item->IsSeparator() )
+-        {
+-            rend->DrawMenuSeparator(dc, y, gi);
++        if (y + item->GetHeight() >= 0 && y < GetMaxClientHeight()) {
++          if ( item->IsSeparator() )
++          {
++              rend->DrawMenuSeparator(dc, y, gi);
++          }
++          else // not a separator
++          {
++              int flags = 0;
++              if ( item->IsCheckable() )
++              {
++                  flags |= wxCONTROL_CHECKABLE;
++
++                  if ( item->IsChecked() )
++                  {
++                      flags |= wxCONTROL_CHECKED;
++                  }
++              }
++
++              if ( !item->IsEnabled() )
++                  flags |= wxCONTROL_DISABLED;
++
++              if ( item->IsSubMenu() )
++                  flags |= wxCONTROL_ISSUBMENU;
++
++              if ( item == GetCurrentItem() )
++                  flags |= wxCONTROL_SELECTED;
++
++              wxBitmap bmp;
++
++              if ( !item->IsEnabled() )
++              {
++                  bmp = item->GetDisabledBitmap();
++              }
++
++              if ( !bmp.IsOk() )
++              {
++                  // strangely enough, for unchecked item we use the
++                  // "checked" bitmap because this is the default one - this
++                  // explains this strange boolean expression
++                  bmp = item->GetBitmap(!item->IsCheckable() || item->IsChecked());
++              }
++
++              rend->DrawMenuItem
++                    (
++                       dc,
++                       y,
++                       gi,
++                       item->GetItemLabelText(),
++                       item->GetAccelString(),
++                       bmp,
++                       flags,
++                       item->GetAccelIndex()
++                    );
++          }
+         }
+-        else // not a separator
+-        {
+-            int flags = 0;
+-            if ( item->IsCheckable() )
+-            {
+-                flags |= wxCONTROL_CHECKABLE;
+-
+-                if ( item->IsChecked() )
+-                {
+-                    flags |= wxCONTROL_CHECKED;
+-                }
+-            }
+-
+-            if ( !item->IsEnabled() )
+-                flags |= wxCONTROL_DISABLED;
+-
+-            if ( item->IsSubMenu() )
+-                flags |= wxCONTROL_ISSUBMENU;
+-
+-            if ( item == GetCurrentItem() )
+-                flags |= wxCONTROL_SELECTED;
+-
+-            wxBitmap bmp;
+-
+-            if ( !item->IsEnabled() )
+-            {
+-                bmp = item->GetDisabledBitmap();
+-            }
+ 
+-            if ( !bmp.IsOk() )
+-            {
+-                // strangely enough, for unchecked item we use the
+-                // "checked" bitmap because this is the default one - this
+-                // explains this strange boolean expression
+-                bmp = item->GetBitmap(!item->IsCheckable() || item->IsChecked());
+-            }
++        y += item->GetHeight();
++    }
+ 
+-            rend->DrawMenuItem
+-                  (
+-                     dc,
+-                     y,
+-                     gi,
+-                     item->GetItemLabelText(),
+-                     item->GetAccelString(),
+-                     bmp,
+-                     flags,
+-                     item->GetAccelIndex()
+-                  );
+-        }
++    if (HasOverflowArrowUp())
++    {
++        wxRect rect = GetOverflowArrowUpRect(gi);
++        rend->DrawMenuOverflowArrow(dc, rect, wxUP);
++    }
+ 
+-        y += item->GetHeight();
++    if (HasOverflowArrowDown())
++    {
++        wxRect rect = GetOverflowArrowDownRect(gi);
++        rend->DrawMenuOverflowArrow(dc, rect, wxDOWN);
+     }
+ }
+ 
+@@ -634,12 +745,10 @@ void wxPopupMenuWindow::ClickItem(wxMenuItem *item)
+     wxASSERT_MSG( !item->IsSeparator() && !item->IsSubMenu(),
+                   wxT("can't click this item") );
+ 
+-    wxMenu* menu = m_menu;
++    m_menu->ClickItem(item);
+ 
+     // close all menus
+     DismissAndNotify();
+-
+-    menu->ClickItem(item);
+ }
+ 
+ void wxPopupMenuWindow::OpenSubmenu(wxMenuItem *item, InputMethod how)
+@@ -650,7 +759,7 @@ void wxPopupMenuWindow::OpenSubmenu(wxMenuItem *item, InputMethod how)
+     wxCHECK_RET( submenu, wxT("can only open submenus!") );
+ 
+     // FIXME: should take into account the border width
+-    submenu->Popup(ClientToScreen(wxPoint(0, item->GetPosition())),
++    submenu->Popup(ClientToScreen(wxPoint(0, item->GetPosition() + GetOffsetY())),
+                    wxSize(m_menu->GetGeometryInfo().GetSize().x, 0),
+                    how == WithKeyboard /* preselect first item then */);
+ 
+@@ -751,8 +860,47 @@ void wxPopupMenuWindow::OnMouseMove(wxMouseEvent& event)
+     event.Skip();
+ }
+ 
++bool wxPopupMenuWindow::IsPointTrackingToSubMenu(const wxPoint& target) {
++    wxMenuItem *item = GetCurrentItem();
++    wxCHECK_MSG( CanOpen(item), false, wxT("where is our open submenu?") );
++
++    wxPopupMenuWindow *win = item->GetSubMenu()->m_popupMenu;
++    wxCHECK_MSG( win, false, wxT("submenu is opened but not shown?") );
++
++    wxRect popupRect = win->GetScreenRect();
++    wxPoint pt1 = popupRect.GetPosition();
++    pt1.y -= 10;
++    wxPoint pt2 = wxPoint(pt1.x, pt1.y + popupRect.height + 10);
++
++    if (m_subMenuPoint.x >= pt1.x || target.x < m_subMenuPoint.x)
++    {
++        return false;
++    }
++
++    double ox = m_subMenuPoint.x;
++    double oy = m_subMenuPoint.y;
++
++    double d1 = (pt1.y - oy) / (pt1.x - ox);
++    double d2 = (pt2.y - oy) / (pt2.x - ox);
++
++    double y1 = oy + d1 * (target.x - ox);
++    double y2 = oy + d2 * (target.x - ox);
++
++    return target.y >= y1 && target.y <= y2;
++}
++
++
+ void wxPopupMenuWindow::ProcessMouseMove(const wxPoint& pt)
+ {
++    if (OverflowArrowHitTest(pt))
++    {
++        if (!m_overflowTimer.IsRunning())
++        {
++            m_overflowTimer.StartOnce(OVERFLOW_INITIAL_TIMEOUT);
++        }
++        return;
++    }
++
+     wxMenuItemIter node = GetMenuItemFromPoint(pt);
+ 
+     // don't reset current to NULL here, we only do it when the mouse leaves
+@@ -761,54 +909,110 @@ void wxPopupMenuWindow::ProcessMouseMove(const wxPoint& pt)
+     {
+         if ( !m_nodeCurrent || (node != m_nodeCurrent) )
+         {
+-            ChangeCurrent(node);
++            if (!HasOpenSubmenu())
++            {
++                ChangeCurrent(node);
+ 
+-            wxMenuItem *item = GetCurrentItem();
+-            if ( CanOpen(item) )
++                wxMenuItem *item = GetCurrentItem();
++                if ( CanOpen(item) )
++                {
++                    OpenSubmenu(item, WithMouse);
++                }
++            }
++            else
+             {
+-                OpenSubmenu(item, WithMouse);
++                if (!m_subMenuTimer.IsRunning())
++                {
++                    m_subMenuPoint = ClientToScreen(pt);
++                    m_subMenuTimer.StartOnce(SUBMENU_TIMEOUT);
++                }
++                else
++                {
++                    wxPoint screenPt = ClientToScreen(pt);
++
++                    int diff = abs(screenPt.x - m_subMenuPoint.x) + abs(screenPt.y - m_subMenuPoint.y);
++
++                    if (diff >= 10) {
++                        if (!IsPointTrackingToSubMenu(screenPt))
++                        {
++                            m_subMenuTimer.Stop();
++
++                            ChangeCurrent(node);
++
++                            wxMenuItem *item = GetCurrentItem();
++                            if ( CanOpen(item) )
++                            {
++                                OpenSubmenu(item, WithMouse);
++                            }
++                        }
++                        else
++                        {
++                            m_subMenuTimer.StartOnce(SUBMENU_TIMEOUT);
++                        }
++                    } else {
++                        m_subMenuTimer.StartOnce(SUBMENU_TIMEOUT);
++                    }
++                }
+             }
+         }
+         //else: same item, nothing to do
+     }
+     else // not on an item
+     {
+-        // the last open submenu forwards the mouse move messages to its
+-        // parent, so if the mouse moves to another item of the parent menu,
+-        // this menu is closed and this other item is selected - in the similar
+-        // manner, the top menu forwards the mouse moves to the menubar which
+-        // allows to select another top level menu by just moving the mouse
+-
+-        // we need to translate our client coords to the client coords of the
+-        // window we forward this event to
+-        wxPoint ptScreen = ClientToScreen(pt);
++        if (HasOpenSubmenu())
++        {
++            if (!IsPointTrackingToSubMenu(ClientToScreen(pt))) {
++                ChangeCurrent(wxMenuItemIter());
++            }
++            else
++            {
++                m_subMenuTimer.StartOnce(SUBMENU_TIMEOUT);
++            }
++        }
++        else if (m_nodeCurrent)
++        {
++            ChangeCurrent(wxMenuItemIter());
++        }
+ 
+-        // if the mouse is outside this menu, let the parent one to
+-        // process it
+-        wxMenu *menuParent = m_menu->GetParent();
+-        if ( menuParent )
++        if (!HasOpenSubmenu())
+         {
+-            wxPopupMenuWindow *win = menuParent->m_popupMenu;
++            // the last open submenu forwards the mouse move messages to its
++            // parent, so if the mouse moves to another item of the parent menu,
++            // this menu is closed and this other item is selected - in the similar
++            // manner, the top menu forwards the mouse moves to the menubar which
++            // allows to select another top level menu by just moving the mouse
++
++            // we need to translate our client coords to the client coords of the
++            // window we forward this event to
++            wxPoint ptScreen = ClientToScreen(pt);
++
++            // if the mouse is outside this menu, let the parent one to
++            // process it
++            wxMenu *menuParent = m_menu->GetParent();
++            if ( menuParent )
++            {
++                wxPopupMenuWindow *win = menuParent->m_popupMenu;
+ 
+-            // if we're shown, the parent menu must be also shown
+-            wxCHECK_RET( win, wxT("parent menu is not shown?") );
++                // if we're shown, the parent menu must be also shown
++                wxCHECK_RET( win, wxT("parent menu is not shown?") );
+ 
+-            win->ProcessMouseMove(win->ScreenToClient(ptScreen));
+-        }
+-        else // no parent menu
+-        {
+-            wxMenuBar *menubar = m_menu->GetMenuBar();
+-            if ( menubar )
++                win->ProcessMouseMove(win->ScreenToClient(ptScreen));
++            }
++            else // no parent menu
+             {
+-                if ( menubar->ProcessMouseEvent(
+-                            menubar->ScreenToClient(ptScreen)) )
++                wxMenuBar *menubar = m_menu->GetMenuBar();
++                if ( menubar )
+                 {
+-                    // menubar has closed this menu and opened another one, probably
+-                    return;
++                    if ( menubar->ProcessMouseEvent(
++                                menubar->ScreenToClient(ptScreen)) )
++                    {
++                        // menubar has closed this menu and opened another one, probably
++                        return;
++                    }
+                 }
+             }
++            //else: top level popup menu, no other processing to do
+         }
+-        //else: top level popup menu, no other processing to do
+     }
+ }
+ 
+@@ -822,8 +1026,8 @@ void wxPopupMenuWindow::OnMouseLeave(wxMouseEvent& event)
+         // we shouldn't change the current them if our submenu is opened and
+         // mouse moved there, in this case the submenu is responsable for
+         // handling it
+-        bool resetCurrent;
+-        if ( HasOpenSubmenu() )
++        bool resetCurrent = false;
++        if ( HasOpenSubmenu() && !m_subMenuTimer.IsRunning())
+         {
+             wxMenuItem *item = GetCurrentItem();
+             wxCHECK_RET( CanOpen(item), wxT("where is our open submenu?") );
+@@ -831,10 +1035,15 @@ void wxPopupMenuWindow::OnMouseLeave(wxMouseEvent& event)
+             wxPopupMenuWindow *win = item->GetSubMenu()->m_popupMenu;
+             wxCHECK_RET( win, wxT("submenu is opened but not shown?") );
+ 
+-            // only handle this event if the mouse is not inside the submenu
+-            wxPoint pt = ClientToScreen(event.GetPosition());
+-            resetCurrent =
+-                win->HitTest(win->ScreenToClient(pt)) == wxHT_WINDOW_OUTSIDE;
++            wxMenuItemIter node = GetMenuItemFromPoint(event.GetPosition());
++            if (node && node->GetData() == item) {
++                resetCurrent = false;
++            } else {
++                // only handle this event if the mouse is not inside the submenu
++                wxPoint pt = ClientToScreen(event.GetPosition());
++                resetCurrent =
++                    win->HitTest(win->ScreenToClient(pt)) == wxHT_WINDOW_OUTSIDE;
++            }
+         }
+         else
+         {
+@@ -851,6 +1060,25 @@ void wxPopupMenuWindow::OnMouseLeave(wxMouseEvent& event)
+     event.Skip();
+ }
+ 
++void wxPopupMenuWindow::OnMouseWheel(wxMouseEvent& event)
++{
++  if (GetClientRect().Contains(event.GetPosition()) && HasOverflow())
++  {
++    double rotation = event.GetWheelRotation();
++    double delta = event.GetWheelDelta();
++    int pixels = ceill(10 * rotation / delta * event.GetLinesPerAction());
++
++    if (pixels > 0)
++    {
++        SetOffsetY(wxMin(GetOffsetY() + pixels, 0));
++    }
++    else
++    {
++        SetOffsetY(wxMax(GetOffsetY() + pixels, GetMaxClientHeight() - GetClientSize().y));
++    }
++  }
++}
++
+ void wxPopupMenuWindow::OnKeyDown(wxKeyEvent& event)
+ {
+     wxMenuBar *menubar = m_menu->GetMenuBar();
+@@ -1041,6 +1269,58 @@ bool wxPopupMenuWindow::ProcessKeyDown(int key)
+     return processed;
+ }
+ 
++void wxPopupMenuWindow::OnSubMenuTimer(wxTimerEvent& WXUNUSED(event))
++{
++    wxPoint pt = ScreenToClient(wxGetMousePosition());
++
++    wxMenuItemIter node = GetMenuItemFromPoint(pt);
++
++    if ( node )
++    {
++        if ( !m_nodeCurrent || (node != m_nodeCurrent) )
++        {
++            ChangeCurrent(node);
++
++            wxMenuItem *item = GetCurrentItem();
++            if ( CanOpen(item) )
++            {
++                OpenSubmenu(item, WithMouse);
++            }
++        }
++    }
++    else if ( HasOpenSubmenu() )
++    {
++        wxMenuItem *item = GetCurrentItem();
++        wxCHECK_RET( CanOpen(item), wxT("where is our open submenu?") );
++
++        wxPopupMenuWindow *win = item->GetSubMenu()->m_popupMenu;
++        wxCHECK_RET( win, wxT("submenu is opened but not shown?") );
++
++        if (win->HitTest(win->ScreenToClient(wxGetMousePosition())) == wxHT_WINDOW_OUTSIDE)
++        {
++            ChangeCurrent(wxMenuItemIter());
++        }
++    }
++}
++
++void wxPopupMenuWindow::OnOverflowTimer(wxTimerEvent& WXUNUSED(event))
++{
++    wxPoint pt = ScreenToClient(wxGetMousePosition());
++
++    if (OverflowArrowHitTest(pt))
++    {
++        if (GetOverflowArrowUpRect(m_menu->GetGeometryInfo()).Contains(pt))
++        {
++            SetOffsetY(wxMin(GetOffsetY() + 4, 0));
++        }
++        else
++        {
++            SetOffsetY(wxMax(GetOffsetY() - 4, GetMaxClientHeight() - GetClientSize().y));
++        }
++        m_overflowTimer.StartOnce(OVERFLOW_REPEAT_TIMEOUT);
++    }
++}
++
+ // ----------------------------------------------------------------------------
+ // wxMenu
+ // ----------------------------------------------------------------------------
+@@ -1285,7 +1565,7 @@ void wxMenu::Detach()
+ 
+ wxWindow *wxMenu::GetRootWindow() const
+ {
+-    return GetMenuBar() ? GetMenuBar() : GetInvokingWindow();
++    return GetMenuBar() ? GetMenuBar() : GetWindow();
+ }
+ 
+ wxRenderer *wxMenu::GetRenderer() const
+@@ -1358,6 +1638,7 @@ void wxMenu::OnDismiss(bool dismissParent)
+             wxCHECK_RET( win, wxT("what kind of menu is this?") );
+ 
+             win->DismissPopupMenu();
++            //delete this;
+         }
+     }
+ }
+@@ -1741,6 +2022,11 @@ void wxMenuBar::Attach(wxFrame *frame)
+ 
+ void wxMenuBar::Detach()
+ {
++    if (GetParent())
++    {
++        GetParent()->RemoveChild(this);
++    }
++
+     // don't delete the window because we may be reattached later, just hide it
+     if ( m_frameLast )
+     {
+@@ -2102,9 +2388,9 @@ void wxMenuBar::OnKillFocus(wxFocusEvent& event)
+ 
+ void wxMenuBar::OnLeftDown(wxMouseEvent& event)
+ {
+-    if ( HasCapture() )
++    if ( IsShowingMenu() )
+     {
+-        OnDismiss();
++        DismissMenu();
+ 
+         event.Skip();
+     }
+@@ -2544,6 +2830,7 @@ wxEventLoop *wxWindow::ms_evtLoopPopup = NULL;
+ 
+ bool wxWindow::DoPopupMenu(wxMenu *menu, int x, int y)
+ {
++#ifndef __WXWASM__
+     wxCHECK_MSG( !ms_evtLoopPopup, false,
+                  wxT("can't show more than one popup menu at a time") );
+ 
+@@ -2570,8 +2857,11 @@ bool wxWindow::DoPopupMenu(wxMenu *menu, int x, int y)
+     Update();
+ #endif // 0
+ 
++#endif // __WXWASM__
++
+     menu->Popup(ClientToScreen(wxPoint(x, y)), wxSize(0,0));
+ 
++#ifndef __WXWASM__
+     // this is not very useful if the menu was popped up because of the mouse
+     // click but I think it is nice to do when it appears because of a key
+     // press (i.e. Windows menu key)
+@@ -2595,14 +2885,29 @@ bool wxWindow::DoPopupMenu(wxMenu *menu, int x, int y)
+     SetCursor(cursorOld);
+ #endif // __WXMSW__
+ 
++#endif // __WXWASM__
++
+     return true;
+ }
+ 
++void wxWindow::DoPopupMenu(wxMenu *menu, int x, int y, std::function<void (bool)> callback)
++{
++    m_popupCallback = callback;
++    menu->Popup(ClientToScreen(wxPoint(x, y)), wxSize(0,0));
++}
++
+ void wxWindow::DismissPopupMenu()
+ {
++    if (m_popupCallback)
++    {
++        m_popupCallback(true);
++        m_popupCallback = NULL;
++    }
++/*
+     wxCHECK_RET( ms_evtLoopPopup, wxT("no popup menu shown") );
+ 
+     ms_evtLoopPopup->Exit();
++*/
+ }
+ 
+ #endif // wxUSE_MENUS
+diff --git a/src/univ/radiobut.cpp b/src/univ/radiobut.cpp
+index ec2ccd9994..18b72961e2 100644
+--- a/src/univ/radiobut.cpp
++++ b/src/univ/radiobut.cpp
+@@ -121,6 +121,17 @@ void wxRadioButton::ChangeValue(bool value)
+     }
+ }
+ 
++void wxRadioButton::Toggle() {
++    if (Get3StateValue() == wxCHK_CHECKED)
++    {
++        Release();
++    }
++    else
++    {
++        wxCheckBox::Toggle();
++    }
++}
++
+ void wxRadioButton::ClearValue()
+ {
+     if ( IsChecked() )
+@@ -141,6 +152,26 @@ void wxRadioButton::SendEvent()
+ // overridden wxCheckBox methods
+ // ----------------------------------------------------------------------------
+ 
++bool wxRadioButton::PerformAction(const wxControlAction& action,
++                                  long numArg,
++                                  const wxString& strArg)
++{
++    if ( action == wxACTION_BUTTON_PRESS )
++        Press();
++    else if ( action == wxACTION_BUTTON_RELEASE )
++        Release();
++    if ( action == wxACTION_CHECKBOX_CHECK )
++        ChangeValue(true);
++    else if ( action == wxACTION_CHECKBOX_CLEAR )
++        ChangeValue(false);
++    else if ( action == wxACTION_CHECKBOX_TOGGLE )
++        Toggle();
++    else
++        return wxControl::PerformAction(action, numArg, strArg);
++
++    return true;
++}
++
+ wxSize wxRadioButton::GetBitmapSize() const
+ {
+     wxBitmap bmp = GetBitmap(State_Normal, Status_Checked);
+@@ -161,7 +192,7 @@ void wxRadioButton::DoDraw(wxControlRenderer *renderer)
+ 
+     renderer->GetRenderer()->
+         DrawRadioButton(dc,
+-                        GetLabel(),
++                        GetLabelText(),
+                         GetBitmap(GetState(flags), status),
+                         renderer->GetRect(),
+                         flags,
+diff --git a/src/univ/scrolbar.cpp b/src/univ/scrolbar.cpp
+index 7db53e6c1b..1056be898c 100644
+--- a/src/univ/scrolbar.cpp
++++ b/src/univ/scrolbar.cpp
+@@ -244,6 +244,8 @@ void wxScrollBar::SetScrollbar(int position, int thumbSize,
+                                int range, int pageSize,
+                                bool refresh)
+ {
++    thumbSize = wxMax(wxMin(thumbSize, range), 0);
++
+     // we only refresh everything when the range changes, thumb position
+     // changes are handled in OnIdle
+     bool needsRefresh = (range != m_range) ||
+@@ -272,19 +274,24 @@ void wxScrollBar::SetScrollbar(int position, int thumbSize,
+ // geometry
+ // ----------------------------------------------------------------------------
+ 
++wxSize wxScrollBar::GetScrollbarArrowSize() const
++{
++    return m_renderer->GetScrollbarArrowSize(IsVertical() ? wxVERTICAL : wxHORIZONTAL);
++}
++
+ wxSize wxScrollBar::DoGetBestClientSize() const
+ {
+     // this dimension is completely arbitrary
+     static const wxCoord SIZE = 140;
+ 
+-    wxSize size = m_renderer->GetScrollbarArrowSize();
++    wxSize size = GetScrollbarArrowSize();
+     if ( IsVertical() )
+     {
+         size.y = SIZE;
+     }
+     else // horizontal
+     {
+-        size.x = SIZE;
++        size.y = 15;
+     }
+ 
+     return size;
+@@ -310,7 +317,7 @@ wxHitTest wxScrollBar::HitTestBar(const wxPoint& pt) const
+     // we only need to work with either x or y coord depending on the
+     // orientation, choose one (but still check the other one to verify if the
+     // mouse is in the window at all)
+-    const wxSize sizeArrowSB = m_renderer->GetScrollbarArrowSize();
++    const wxSize sizeArrowSB = GetScrollbarArrowSize();
+ 
+     wxCoord coord, sizeArrow, sizeTotal;
+     wxSize size = GetSize();
+@@ -417,7 +424,7 @@ wxRect wxScrollBar::GetScrollbarRect(wxScrollBar::Element elem,
+         thumbPos = GetThumbPosition();
+     }
+ 
+-    const wxSize sizeArrow = m_renderer->GetScrollbarArrowSize();
++    const wxSize sizeArrow = GetScrollbarArrowSize();
+ 
+     wxSize sizeTotal = GetClientSize();
+     wxCoord *start, *width;
+@@ -513,7 +520,7 @@ wxRect wxScrollBar::GetScrollbarRect(wxScrollBar::Element elem,
+ 
+ wxCoord wxScrollBar::GetScrollbarSize() const
+ {
+-    const wxSize sizeArrowSB = m_renderer->GetScrollbarArrowSize();
++    const wxSize sizeArrowSB = GetScrollbarArrowSize();
+ 
+     wxCoord sizeArrow, sizeTotal;
+     if ( GetWindowStyle() & wxVERTICAL )
+@@ -546,14 +553,14 @@ wxCoord wxScrollBar::ScrollbarToPixel(int thumbPos)
+         thumbPos = GetThumbPosition();
+     }
+ 
+-    const wxSize sizeArrow = m_renderer->GetScrollbarArrowSize();
++    const wxSize sizeArrow = GetScrollbarArrowSize();
+     return (thumbPos * GetScrollbarSize()) / range
+              + (IsVertical() ? sizeArrow.y : sizeArrow.x);
+ }
+ 
+ int wxScrollBar::PixelToScrollbar(wxCoord coord)
+ {
+-    const wxSize sizeArrow = m_renderer->GetScrollbarArrowSize();
++    const wxSize sizeArrow = GetScrollbarArrowSize();
+     return ((coord - (IsVertical() ? sizeArrow.y : sizeArrow.x)) *
+                GetRange() ) / GetScrollbarSize();
+ }
+diff --git a/src/univ/settingsuniv.cpp b/src/univ/settingsuniv.cpp
+index 3ac673bb88..a49ac561bf 100644
+--- a/src/univ/settingsuniv.cpp
++++ b/src/univ/settingsuniv.cpp
+@@ -98,9 +98,9 @@ int wxSystemSettings::GetMetric(wxSystemMetric index, const wxWindow* win)
+     switch ( index )
+     {
+         case wxSYS_VSCROLL_X:
+-            return wxTheme::Get()->GetRenderer()->GetScrollbarArrowSize().x;
++            return wxTheme::Get()->GetRenderer()->GetScrollbarArrowSize(wxVERTICAL).x;
+         case wxSYS_HSCROLL_Y:
+-            return wxTheme::Get()->GetRenderer()->GetScrollbarArrowSize().y;
++            return wxTheme::Get()->GetRenderer()->GetScrollbarArrowSize(wxHORIZONTAL).y;
+ 
+         default:
+             return wxSystemSettingsNative::GetMetric(index, win);
+diff --git a/src/univ/slider.cpp b/src/univ/slider.cpp
+index ebc030b50c..291a1fafeb 100644
+--- a/src/univ/slider.cpp
++++ b/src/univ/slider.cpp
+@@ -639,14 +639,13 @@ void wxSlider::CalcThumbRect(const wxRect *rectShaftIn,
+     // position is not at lenShaft but at lenShaft - thumbSize
+     if ( m_max != m_min )
+     {
+-        if ( isVertical )
+-        {
+-            *p += ((lenShaft - lenThumb)*(m_max - value))/(m_max - m_min);
+-        }
++        int offset;
++        if (IsInverted())
++            offset = m_max - value;
+         else
+-        { // horz
+-            *p += ((lenShaft - lenThumb)*(value - m_min))/(m_max - m_min);
+-        }
++            offset = value - m_min;
++
++        *p += ((lenShaft - lenThumb) * offset)/(m_max - m_min);
+     }
+ 
+     // calc the label rect
+@@ -695,11 +694,15 @@ void wxSlider::DoDraw(wxControlRenderer *renderer)
+     wxSize sz = GetThumbSize();
+     int len = IsVert() ? sz.x : sz.y;
+ 
++    int offset = IsInverted() ? m_max - m_value : m_value - m_min;
++    int range = m_max - m_min;
++    double fracValue = range > 0 ? static_cast<double>(offset) / range : 0.0;
++
+     // first draw the shaft
+     wxRect rectShaft = rend->GetSliderShaftRect(m_rectSlider, len, orient, style);
+     if ( rectUpdate.Intersects(rectShaft) )
+     {
+-        rend->DrawSliderShaft(dc, m_rectSlider, len, orient, flags, style);
++        rend->DrawSliderShaft(dc, m_rectSlider, fracValue, len, orient, flags, style);
+     }
+ 
+     // calculate the thumb position in pixels and draw it
+@@ -912,16 +915,21 @@ int wxSlider::PixelToThumbPos(wxCoord x) const
+         len = rectShaft.width - sizeThumb.x;
+     }
+ 
++    int logicalPos;
++    if (IsInverted())
++        logicalPos = x0 + len - x;
++    else
++        logicalPos = x - x0;
++
+     int pos = m_min;
+     if ( len > 0 )
+     {
+-        if ( x > x0 )
+-        {
+-            pos += ((x - x0) * (m_max - m_min)) / len;
+-            if ( pos > m_max )
++        if (logicalPos > 0) {
++            if (logicalPos <= len)
++                pos += (logicalPos * (m_max - m_min)) / len;
++            else
+                 pos = m_max;
+         }
+-        //else: x <= x0, leave pos = min
+     }
+ 
+     return pos;
+@@ -946,38 +954,17 @@ void wxSlider::SetShaftPartState(wxScrollThumb::Shaft shaftPart,
+ 
+ void wxSlider::OnThumbDragStart(int pos)
+ {
+-    if (IsVert())
+-    {
+-        PerformAction(wxACTION_SLIDER_THUMB_DRAG, m_max - pos);
+-    }
+-    else
+-    {
+-        PerformAction(wxACTION_SLIDER_THUMB_DRAG, pos);
+-    }
++    PerformAction(wxACTION_SLIDER_THUMB_DRAG, pos);
+ }
+ 
+ void wxSlider::OnThumbDrag(int pos)
+ {
+-    if (IsVert())
+-    {
+-        PerformAction(wxACTION_SLIDER_THUMB_MOVE, m_max - pos);
+-    }
+-    else
+-    {
+-        PerformAction(wxACTION_SLIDER_THUMB_MOVE, pos);
+-    }
++    PerformAction(wxACTION_SLIDER_THUMB_MOVE, pos);
+ }
+ 
+ void wxSlider::OnThumbDragEnd(int pos)
+ {
+-    if (IsVert())
+-    {
+-        PerformAction(wxACTION_SLIDER_THUMB_RELEASE, m_max - pos);
+-    }
+-    else
+-    {
+-        PerformAction(wxACTION_SLIDER_THUMB_RELEASE, pos);
+-    }
++    PerformAction(wxACTION_SLIDER_THUMB_RELEASE, pos);
+ }
+ 
+ void wxSlider::OnPageScrollStart()
+diff --git a/src/univ/spinbutt.cpp b/src/univ/spinbutt.cpp
+index 97d67097ff..94f01ae699 100644
+--- a/src/univ/spinbutt.cpp
++++ b/src/univ/spinbutt.cpp
+@@ -186,13 +186,15 @@ wxSize wxSpinButton::DoGetBestClientSize() const
+ {
+     // a spin button has by default the same size as two scrollbar arrows put
+     // together
+-    wxSize size = m_renderer->GetScrollbarArrowSize();
++    wxSize size;
+     if ( IsVertical() )
+     {
++        size = m_renderer->GetScrollbarArrowSize(wxVERTICAL);
+         size.y *= 2;
+     }
+     else
+     {
++        size = m_renderer->GetScrollbarArrowSize(wxHORIZONTAL);
+         size.x *= 2;
+     }
+ 
+@@ -290,30 +292,40 @@ void wxSpinButton::DoDraw(wxControlRenderer *renderer)
+ 
+ void wxSpinButton::CalcArrowRects(wxRect *rect1, wxRect *rect2) const
+ {
+-    // calculate the rectangles for both arrows: note that normally the 2
+-    // arrows are adjacent to each other but if the total control width/height
+-    // is odd, we can have 1 pixel between them
++    const wxCoord ARROW_WIDTH = 9;
++    const wxCoord ARROW_HEIGHT = 5;
++
+     wxRect rectTotal = GetClientRect();
+ 
+-    *rect1 =
+-    *rect2 = rectTotal;
+     if ( IsVertical() )
+     {
+-        rect1->height /= 2;
+-        rect2->height /= 2;
+-
+-        rect2->y += rect1->height;
+-        if ( rectTotal.height % 2 )
+-            rect2->y++;
++        wxCoord h = rectTotal.height / 2;
++        wxCoord w = rectTotal.width;
++
++        rect1->x = rectTotal.x + (w - ARROW_WIDTH) / 2;
++        rect1->y = rectTotal.y + (h - ARROW_HEIGHT) / 2;
++        rect1->width = ARROW_WIDTH;
++        rect1->height = ARROW_HEIGHT;
++
++        rect2->x = rect1->x;
++        rect2->y = rect1->y + h;
++        rect2->width = ARROW_WIDTH;
++        rect2->height = ARROW_HEIGHT;
+     }
+     else // horizontal
+     {
+-        rect1->width /= 2;
+-        rect2->width /= 2;
+-
+-        rect2->x += rect1->width;
+-        if ( rectTotal.width % 2 )
+-            rect2->x++;
++        wxCoord h = rectTotal.height;
++        wxCoord w = rectTotal.width / 2;
++
++        rect1->x = rectTotal.x + (w - ARROW_WIDTH) / 2;
++        rect1->y = rectTotal.y + (h - ARROW_HEIGHT) / 2;
++        rect1->width = ARROW_WIDTH;
++        rect1->height = ARROW_HEIGHT;
++
++        rect2->x = rect1->x + w;
++        rect2->y = rect1->y;
++        rect2->width = ARROW_WIDTH;
++        rect2->height = ARROW_HEIGHT;
+     }
+ }
+ 
+diff --git a/src/univ/stattext.cpp b/src/univ/stattext.cpp
+index 84b152bc9f..b240c42036 100644
+--- a/src/univ/stattext.cpp
++++ b/src/univ/stattext.cpp
+@@ -75,6 +75,8 @@ void wxStaticText::SetLabel(const wxString& str)
+ 
+     // draw as real label the abbreviated version of it
+     WXSetVisibleLabel(GetEllipsizedLabel());
++
++    AutoResizeIfNecessary();
+ }
+ 
+ void wxStaticText::WXSetVisibleLabel(const wxString& str)
+@@ -84,7 +86,7 @@ void wxStaticText::WXSetVisibleLabel(const wxString& str)
+ 
+ wxString wxStaticText::WXGetVisibleLabel() const
+ {
+-    return wxControl::GetLabel();
++    return wxControl::GetLabelText();
+ }
+ 
+ /*
+diff --git a/src/univ/stdrend.cpp b/src/univ/stdrend.cpp
+index 8e694120e3..0edeaf3f4a 100644
+--- a/src/univ/stdrend.cpp
++++ b/src/univ/stdrend.cpp
+@@ -429,7 +429,7 @@ void wxStdRenderer::DrawBorder(wxDC& dc,
+             break;
+ 
+         case wxBORDER_SIMPLE:
+-            DrawRect(dc, &rect, m_penBlack);
++            DrawStaticBorder(dc, &rect);
+             break;
+ 
+         default:
+diff --git a/src/univ/textctrl.cpp b/src/univ/textctrl.cpp
+index d9fc2e365e..94f7319f1f 100644
+--- a/src/univ/textctrl.cpp
++++ b/src/univ/textctrl.cpp
+@@ -745,6 +745,7 @@ bool wxTextCtrl::Create(wxWindow *parent,
+     RecalcFontMetrics();
+     ChangeValue(value);
+     SetInitialSize(size);
++    SetBackgroundColour(*wxWHITE);
+ 
+     m_isEditable = !(style & wxTE_READONLY);
+ 
+@@ -2408,6 +2409,23 @@ wxSize wxTextCtrl::DoGetBestClientSize() const
+     return wxSize(rectTotal.width, rectTotal.height);
+ }
+ 
++wxSize wxTextCtrl::DoGetSizeFromTextSize(int xlen, int ylen) const
++{
++    wxRect rectText(0, 0, xlen, ylen);
++    wxRect rectTotal = GetRenderer()->GetTextTotalArea(this, rectText);
++
++    if (xlen == -1 || ylen == -1)
++    {
++          wxSize bestSize = DoGetBestClientSize();
++          if (xlen == -1)
++              rectTotal.width = bestSize.x;
++          if (ylen == -1)
++              rectTotal.height = bestSize.y;
++    }
++
++    return wxSize(rectTotal.width, rectTotal.height);
++}
++
+ void wxTextCtrl::UpdateTextRect()
+ {
+     wxRect rectTotal(GetClientSize());
+diff --git a/src/univ/themes/gtk.cpp b/src/univ/themes/gtk.cpp
+index 01eeb97c45..020152743c 100644
+--- a/src/univ/themes/gtk.cpp
++++ b/src/univ/themes/gtk.cpp
+@@ -141,6 +141,7 @@ public:
+ #if wxUSE_SLIDER
+     virtual void DrawSliderShaft(wxDC& dc,
+                                  const wxRect& rect,
++                                 double fracValue,
+                                  int lenThumb,
+                                  wxOrientation orient,
+                                  int flags = 0,
+@@ -193,7 +194,7 @@ public:
+ 
+     // geometry and hit testing
+ #if wxUSE_SCROLLBAR
+-    virtual wxSize GetScrollbarArrowSize() const
++    virtual wxSize GetScrollbarArrowSize(wxOrientation WXUNUSED(orientation)) const
+         { return m_sizeScrollbarArrow; }
+ #endif // wxUSE_SCROLLBAR
+ 
+@@ -1504,6 +1505,7 @@ wxRect wxGTKRenderer::GetSliderShaftRect(const wxRect& rect,
+ 
+ void wxGTKRenderer::DrawSliderShaft(wxDC& dc,
+                                     const wxRect& rectOrig,
++                                    double WXUNUSED(fracValue),
+                                     int WXUNUSED(lenThumb),
+                                     wxOrientation WXUNUSED(orient),
+                                     int flags,
+diff --git a/src/univ/themes/mono.cpp b/src/univ/themes/mono.cpp
+index e028eae0cb..c77a54ffe4 100644
+--- a/src/univ/themes/mono.cpp
++++ b/src/univ/themes/mono.cpp
+@@ -115,6 +115,7 @@ public:
+ #if wxUSE_SLIDER
+     virtual void DrawSliderShaft(wxDC& dc,
+                                  const wxRect& rect,
++                                 double fracValue,
+                                  int lenThumb,
+                                  wxOrientation orient,
+                                  int flags = 0,
+@@ -170,7 +171,8 @@ public:
+     virtual wxRect GetBorderDimensions(wxBorder border) const;
+ 
+ #if wxUSE_SCROLLBAR
+-    virtual wxSize GetScrollbarArrowSize() const { return GetStdBmpSize(); }
++    virtual wxSize GetScrollbarArrowSize(wxOrientation WXUNUSED(orientation)) const
++        { return GetStdBmpSize(); }
+ #endif // wxUSE_SCROLLBAR
+ 
+     virtual wxSize GetCheckBitmapSize() const { return GetStdBmpSize(); }
+@@ -952,6 +954,7 @@ wxMenuGeometryInfo *wxMonoRenderer::GetMenuGeometry(wxWindow *WXUNUSED(win),
+ 
+ void wxMonoRenderer::DrawSliderShaft(wxDC& WXUNUSED(dc),
+                                      const wxRect& WXUNUSED(rect),
++                                     double WXUNUSED(fracValue),
+                                      int WXUNUSED(lenThumb),
+                                      wxOrientation WXUNUSED(orient),
+                                      int WXUNUSED(flags),
+diff --git a/src/univ/themes/win32.cpp b/src/univ/themes/win32.cpp
+index bb6e6778ce..9b559388df 100644
+--- a/src/univ/themes/win32.cpp
++++ b/src/univ/themes/win32.cpp
+@@ -146,6 +146,7 @@ public:
+ #if wxUSE_SLIDER
+     virtual void DrawSliderShaft(wxDC& dc,
+                                  const wxRect& rect,
++                                 double fracValue,
+                                  int lenThumb,
+                                  wxOrientation orient,
+                                  int flags = 0,
+@@ -201,7 +202,7 @@ public:
+     virtual void AdjustSize(wxSize *size, const wxWindow *window);
+     virtual bool AreScrollbarsInsideBorder() const;
+ 
+-    virtual wxSize GetScrollbarArrowSize() const
++    virtual wxSize GetScrollbarArrowSize(wxOrientation WXUNUSED(orientation)) const
+         { return m_sizeScrollbarArrow; }
+ 
+     virtual wxSize GetCheckBitmapSize() const
+@@ -2062,6 +2063,7 @@ wxRect wxWin32Renderer::GetSliderShaftRect(const wxRect& rectOrig,
+ 
+ void wxWin32Renderer::DrawSliderShaft(wxDC& dc,
+                                       const wxRect& rectOrig,
++                                      double WXUNUSED(fracValue),
+                                       int lenThumb,
+                                       wxOrientation orient,
+                                       int flags,
+diff --git a/src/univ/winuniv.cpp b/src/univ/winuniv.cpp
+index 83ba04057c..ba1783efb9 100644
+--- a/src/univ/winuniv.cpp
++++ b/src/univ/winuniv.cpp
+@@ -96,13 +96,15 @@ public:
+     wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowDFB);
+ #elif defined(__WXX11__)
+     wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowX11);
++ #elif defined(__WXWASM__)
++    wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowWasm);
+ #endif
+ 
+ wxBEGIN_EVENT_TABLE(wxWindow, wxWindowNative)
+     EVT_SIZE(wxWindow::OnSize)
+ 
+ #if wxUSE_ACCEL || wxUSE_MENUS
+-    EVT_KEY_DOWN(wxWindow::OnKeyDown)
++    //EVT_KEY_DOWN(wxWindow::OnKeyDown)
+ #endif // wxUSE_ACCEL
+ 
+ #if wxUSE_MENUS
+@@ -132,6 +134,10 @@ void wxWindow::Init()
+ 
+     m_oldSize.x = wxDefaultCoord;
+     m_oldSize.y = wxDefaultCoord;
++
++#if wxUSE_MENUS
++    m_popupCallback = NULL;
++#endif
+ }
+ 
+ bool wxWindow::Create(wxWindow *parent,
+@@ -915,7 +921,7 @@ void wxWindow::SetScrollbar(int orient,
+                             bool refresh)
+ {
+ #if wxUSE_SCROLLBAR
+-    wxASSERT_MSG( pageSize <= range,
++    wxASSERT_MSG( pageSize <= range || range == -1,
+                     wxT("page size can't be greater than range") );
+ 
+     bool hasClientSizeChanged = false;
+diff --git a/src/unix/utilsunx.cpp b/src/unix/utilsunx.cpp
+index 36906c84c7..dc305f0c61 100644
+--- a/src/unix/utilsunx.cpp
++++ b/src/unix/utilsunx.cpp
+@@ -964,7 +964,7 @@ static bool wxGetHostNameInternal(wxChar *buf, int sz)
+     *buf = wxT('\0');
+ 
+     // we're using uname() which is POSIX instead of less standard sysinfo()
+-#if defined(HAVE_UNAME)
++#if defined(HAVE_UNAME) && !defined(__WXWASM__)
+     struct utsname uts;
+     bool ok = uname(&uts) != -1;
+     if ( ok )
+@@ -1073,6 +1073,8 @@ bool wxGetUserName(wxChar *buf, int sz)
+ #endif // HAVE_PW_GECOS/!HAVE_PW_GECOS
+ }
+ 
++#ifndef __WXWASM__
++
+ bool wxIsPlatform64Bit()
+ {
+ #if SIZEOF_VOID_P == 8
+@@ -1093,6 +1095,8 @@ wxString wxGetCpuArchitectureName()
+     return wxGetCommandOutput(wxT("uname -m"));
+ }
+ 
++#endif
++
+ #ifdef __LINUX__
+ 
+ static bool
+@@ -1128,7 +1132,7 @@ wxLinuxDistributionInfo wxGetLinuxDistributionInfo()
+ #endif // __LINUX__
+ 
+ // these functions are in src/osx/utils_base.mm for wxOSX.
+-#ifndef __DARWIN__
++#if !defined(__DARWIN__) && !defined(__WXWASM__)
+ 
+ wxOperatingSystemId wxGetOsVersion(int *verMaj, int *verMin, int *verMicro)
+ {
+@@ -1181,7 +1185,7 @@ bool wxCheckOsVersion(int majorVsn, int minorVsn, int microVsn)
+         || (majorCur == majorVsn && minorCur == minorVsn && microCur >= microVsn);
+ }
+ 
+-#endif // !__DARWIN__
++#endif // !__DARWIN__ && !__WXWASM__
+ 
+ unsigned long wxGetProcessId()
+ {

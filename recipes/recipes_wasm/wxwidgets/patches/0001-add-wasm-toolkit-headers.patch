@@ -1,0 +1,3606 @@
+diff --git a/include/wx/wasm/app.h b/include/wx/wasm/app.h
+new file mode 100644
+index 0000000000..2898540bf4
+--- /dev/null
++++ b/include/wx/wasm/app.h
+@@ -0,0 +1,73 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/app.h
++// Purpose:     wxApp class
++// Author:      Adam Hilss
++// Copyright:   (c) 2022 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_APP_H_
++#define _WX_WASM_APP_H_
++
++#include "wx/event.h"
++#include "wx/hashset.h"
++#include "wx/kbdstate.h"
++#include "wx/mousestate.h"
++#include "wx/timer.h"
++
++class EmscriptenKeyboardEvent;
++class wxWasmDisplay;
++
++//-----------------------------------------------------------------------------
++// wxApp
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxApp: public wxAppBase
++{
++public:
++    wxApp();
++    virtual ~wxApp();
++
++    void Paint();
++
++    bool IsKeyPressed(long keyCode);
++
++    void GetMousePosition(int *x, int *y);
++    void GetMouseState(wxMouseState *mouseState);
++    wxWindow *GetMouseWindow(const wxPoint& position) const;
++
++    // Internal use only
++    wxWasmDisplay* GetDisplay() { return m_display; }
++
++    bool HandleKeyEvent(wxKeyEvent *event);
++    void HandleMouseEvent(wxMouseEvent *event);
++    void HandleMouseWheelEvent(wxMouseEvent *event);
++    void HandleSizeEvent(const wxSizeEvent& event);
++    void HandleActivateEvent(wxActivateEvent *event);
++    void HandleCloseEvent(wxCloseEvent* event);
++
++protected:
++    void SetKeyPressed(long keyCode, bool pressed);
++
++    void SendMouseEventToWindow(wxMouseEvent *event, wxWindow *window);
++
++    void UpdateMouseState(const wxMouseEvent& event);
++    void UpdateMouseState(const wxKeyEvent& event);
++
++private:
++    wxDECLARE_DYNAMIC_CLASS(wxApp);
++
++    // Display
++    wxWasmDisplay *m_display; 
++
++    // Keyboard
++    WX_DECLARE_HASH_SET(long, wxIntegerHash, wxIntegerEqual, KeyCodeSet);
++    KeyCodeSet m_keyCodeSet;
++
++    // Mouse
++    wxMouseState m_mouseState;
++
++    friend class wxDropSource;
++};
++
++#endif // _WX_WASM_APP_H_
+diff --git a/include/wx/wasm/bitmap.h b/include/wx/wasm/bitmap.h
+new file mode 100644
+index 0000000000..f50a50f3b1
+--- /dev/null
++++ b/include/wx/wasm/bitmap.h
+@@ -0,0 +1,137 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/bitmap.h
++// Purpose:     wxBitmap class
++// Author:      Adam Hilss
++// Copyright:   (c) 2022 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_BITMAP_H_
++#define _WX_WASM_BITMAP_H_
++
++class WXDLLIMPEXP_FWD_CORE wxPixelDataBase;
++
++//-----------------------------------------------------------------------------
++// wxBitmap
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxBitmap: public wxBitmapBase
++{
++public:
++    wxBitmap();
++    wxBitmap(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH);
++    wxBitmap(const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH);
++    wxBitmap(const char bits[], int width, int height, int depth = 1);
++    wxBitmap(const char* const* bits);
++    wxBitmap(const wxString &filename, wxBitmapType type = wxBITMAP_TYPE_XPM);
++    wxBitmap(const wxImage& image, int depth = wxBITMAP_SCREEN_DEPTH, double scale = 1.0);
++
++    virtual bool Create(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH);
++    virtual bool Create(const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH);
++    virtual bool Create(int width, int height, const wxDC& dc);
++    virtual bool Create(const char bits[], int width, int height, int depth = 1);
++    virtual bool CreateScaled(int width, int height, int depth, double scale);
++
++    virtual int GetHeight() const;
++    virtual int GetWidth() const;
++    virtual int GetDepth() const;
++
++    virtual double GetScaleFactor() const;
++    virtual double GetScaledWidth() const;
++    virtual double GetScaledHeight() const;
++
++    double GetLogicalWidth() const { return GetWidth(); }
++    double GetLogicalHeight() const { return GetHeight(); }
++    wxSize GetLogicalSize() const { return wxSize(GetWidth(), GetHeight()); }
++
++#if wxUSE_IMAGE
++    virtual bool Create(const wxImage& image,
++                        int depth = wxBITMAP_SCREEN_DEPTH,
++                        double scale = 1.0);
++    virtual wxImage ConvertToImage() const;
++#endif // wxUSE_IMAGE
++
++    virtual wxMask *GetMask() const;
++    virtual void SetMask(wxMask *mask);
++
++    virtual wxBitmap GetSubBitmap(const wxRect& rect) const;
++
++    virtual bool SaveFile(const wxString &name, wxBitmapType type,
++                          const wxPalette *palette = NULL) const;
++    virtual bool LoadFile(const wxString &name, wxBitmapType type);
++
++    virtual void* GetRawData(wxPixelDataBase& data, int bpp);
++    virtual void UngetRawData(wxPixelDataBase& data);
++
++    virtual void *BeginRawAccess() const;
++    virtual void EndRawAccess() const;
++
++    int GetBytesPerPixel() const;
++    int GetBytesPerRow() const;
++
++#if wxUSE_PALETTE
++    virtual wxPalette *GetPalette() const;
++    virtual void SetPalette(const wxPalette& palette);
++#endif // wxUSE_PALETTE
++
++    // copies the contents and mask of the given (colour) icon to the bitmap
++    virtual bool CopyFromIcon(const wxIcon& icon);
++
++    // implementation:
++    virtual void SetHeight(int height);
++    virtual void SetWidth(int width);
++    virtual void SetDepth(int depth);
++
++    static void InitStandardHandlers();
++
++    bool HasAlpha() const { return GetDepth() == 32; }
++
++    void SyncToCpp() const;
++    void SyncToJs() const;
++    int GetJavascriptId() const;
++
++protected:
++    virtual wxGDIRefData* CreateGDIRefData() const;
++    virtual wxGDIRefData* CloneGDIRefData(const wxGDIRefData* data) const;
++
++    // implementation
++    void AllocateData() const;
++
++private:
++    wxDECLARE_DYNAMIC_CLASS(wxBitmap);
++};
++
++//-----------------------------------------------------------------------------
++// wxMask
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxMask : public wxMaskBase
++{
++public:
++    wxMask();
++    wxMask(const wxMask& mask);
++    wxMask(const wxBitmap& bitmap, const wxColour& colour);
++#if wxUSE_PALETTE
++    wxMask(const wxBitmap& bitmap, int paletteIndex);
++#endif // wxUSE_PALETTE
++    wxMask(const wxBitmap& bitmap);
++    virtual ~wxMask();
++
++    wxBitmap GetBitmap() const;
++
++    int GetDataSize() const { return m_dataSize; }
++    uint32_t* GetData() const;
++
++private:
++    virtual void FreeData();
++    virtual bool InitFromColour(const wxBitmap& bitmap, const wxColour& colour);
++    virtual bool InitFromMonoBitmap(const wxBitmap& bitmap);
++
++    wxDECLARE_DYNAMIC_CLASS(wxMask);
++
++    int m_dataSize;
++    uint32_t* m_data;
++    wxBitmap m_bitmap;
++};
++
++#endif // _WX_WASM_BITMAP_H_
+diff --git a/include/wx/wasm/brush.h b/include/wx/wasm/brush.h
+new file mode 100644
+index 0000000000..d32adee400
+--- /dev/null
++++ b/include/wx/wasm/brush.h
+@@ -0,0 +1,53 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/brush.h
++// Purpose:     wxBrush class
++// Author:      Adam Hilss
++// Copyright:   (c) 2022 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_BRUSH_H_
++#define _WX_WASM_BRUSH_H_
++
++class WXDLLIMPEXP_FWD_CORE wxBitmap;
++class WXDLLIMPEXP_FWD_CORE wxColour;
++
++//-----------------------------------------------------------------------------
++// wxBrush
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxBrush: public wxBrushBase
++{
++public:
++    wxBrush() : wxBrush(*wxBLACK) { }
++    wxBrush(const wxColour &colour, wxBrushStyle style = wxBRUSHSTYLE_SOLID);
++    wxBrush(const wxBitmap &stippleBitmap);
++    virtual ~wxBrush();
++
++    bool operator==(const wxBrush& brush) const;
++    bool operator!=(const wxBrush& brush) const { return !(*this == brush); }
++
++    void SetColour(const wxColour& col);
++    void SetColour(unsigned char r, unsigned char g, unsigned char b);
++
++    void SetStyle(wxBrushStyle style);
++    void SetStipple(const wxBitmap& stipple);
++
++    wxColour GetColour() const;
++    wxBrushStyle GetStyle() const;
++    wxBitmap *GetStipple() const;
++
++    wxDEPRECATED_MSG("use wxBRUSHSTYLE_XXX constants")
++    wxBrush(const wxColour& col, int style);
++    
++    wxDEPRECATED_MSG("use wxBRUSHSTYLE_XXX constants")
++    void SetStyle(int style) { SetStyle((wxBrushStyle)style); }
++
++protected:
++    virtual wxGDIRefData *CreateGDIRefData() const;
++    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
++
++    wxDECLARE_DYNAMIC_CLASS(wxBrush);
++};
++
++#endif // _WX_WASM_BRUSH_H_
+diff --git a/include/wx/wasm/chkconf.h b/include/wx/wasm/chkconf.h
+new file mode 100644
+index 0000000000..11974256e2
+--- /dev/null
++++ b/include/wx/wasm/chkconf.h
+@@ -0,0 +1,7 @@
++/*
++ * Name:        wx/wasm/chkconf.h
++ * Purpose:     wxWasm-specific settings consistency checks
++ * Author:      Adam Hilss
++ * Copyright:   (c) 2022 Adam Hilss
++ * Licence:     LGPL v2
++ */
+diff --git a/include/wx/wasm/clipbrd.h b/include/wx/wasm/clipbrd.h
+new file mode 100644
+index 0000000000..f1d2f95cae
+--- /dev/null
++++ b/include/wx/wasm/clipbrd.h
+@@ -0,0 +1,60 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/clipbrd.h
++// Purpose:
++// Author:      Adam Hilss
++// Copyright:   (c) 2022 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++
++#ifndef _WX_CLIPBRD_H_
++#define _WX_CLIPBRD_H_
++
++#if wxUSE_CLIPBOARD
++
++//-----------------------------------------------------------------------------
++// wxClipboard
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxClipboard : public wxClipboardBase
++{
++public:
++    wxClipboard() {}
++    virtual ~wxClipboard() {}
++
++    // open the clipboard before SetData() and GetData()
++    virtual bool Open() { return false; }
++
++    // close the clipboard after SetData() and GetData()
++    virtual void Close() {}
++
++    // query whether the clipboard is opened
++    virtual bool IsOpened() const { return false; }
++
++    // set the clipboard data. all other formats will be deleted.
++    virtual bool SetData(wxDataObject *WXUNUSED(data)) { return false; }
++
++    // add to the clipboard data.
++    virtual bool AddData(wxDataObject *WXUNUSED(data)) { return false; }
++
++    // ask if data in correct format is available
++    virtual bool IsSupported(const wxDataFormat& WXUNUSED(format)) { return false; }
++
++    // fill data with data on the clipboard (if available)
++    virtual bool GetData(wxDataObject& WXUNUSED(data))  { return false; }
++
++    // clears wxTheClipboard and the system's clipboard if possible
++    virtual void Clear() {}
++
++    // flushes the clipboard: this means that the data which is currently on
++    // clipboard will stay available even after the application exits (possibly
++    // eating memory), otherwise the clipboard will be emptied on exit
++    virtual bool Flush() { return false; }
++
++private:
++    wxDECLARE_DYNAMIC_CLASS(wxClipboard);
++};
++
++#endif // wxUSE_CLIPBOARD
++
++#endif // _WX_CLIPBRD_H_
+diff --git a/include/wx/wasm/colour.h b/include/wx/wasm/colour.h
+new file mode 100644
+index 0000000000..f33e28b807
+--- /dev/null
++++ b/include/wx/wasm/colour.h
+@@ -0,0 +1,73 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/colour.h
++// Purpose:
++// Author:      Adam Hilss
++// Copyright:   (c) 2022 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_COLOUR_H_
++#define _WX_WASM_COLOUR_H_
++
++//-----------------------------------------------------------------------------
++// wxColour
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxColour : public wxColourBase
++{
++public:
++    // constructors
++    // ------------
++    DEFINE_STD_WXCOLOUR_CONSTRUCTORS
++
++    // copy ctors and assignment operators
++    wxColour(const wxColour& col)
++    {
++        Init();
++        *this = col;
++    }
++
++    virtual ~wxColour();
++
++    wxColour& operator=(const wxColour& col);
++
++    // accessors
++    virtual bool IsOk() const { return m_isInit; }
++
++    unsigned char Red() const { return m_red; }
++    unsigned char Green() const { return m_green; }
++    unsigned char Blue() const { return m_blue; }
++    unsigned char Alpha() const { return m_alpha; }
++
++    // comparison
++    bool operator==(const wxColour& colour) const
++    {
++        return (m_red == colour.m_red &&
++                m_green == colour.m_green &&
++                m_blue == colour.m_blue &&
++                m_alpha == colour.m_alpha &&
++                m_isInit == colour.m_isInit);
++    }
++
++    bool operator!=(const wxColour& colour) const { return !(*this == colour); }
++
++protected:
++
++    // Helper function
++    void Init();
++
++    virtual void
++    InitRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
++
++private:
++    bool m_isInit;
++    unsigned char m_red;
++    unsigned char m_blue;
++    unsigned char m_green;
++    unsigned char m_alpha;
++
++private:
++    wxDECLARE_DYNAMIC_CLASS(wxColour);
++};
++
++#endif // _WX_WASM_COLOUR_H_
+diff --git a/include/wx/wasm/config.h b/include/wx/wasm/config.h
+new file mode 100644
+index 0000000000..842efeb47b
+--- /dev/null
++++ b/include/wx/wasm/config.h
+@@ -0,0 +1,102 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/config.h
++// Purpose:     wxLocalStorageConfig class
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++
++#ifndef _WX_WASM_CONFIG_H_
++#define _WX_WASM_CONFIG_H_
++
++#include "wx/defs.h"
++
++#if wxUSE_CONFIG
++
++#include "wx/string.h"
++#include "wx/confbase.h"
++
++// ----------------------------------------------------------------------------
++// wxLocalStorageConfig
++// ----------------------------------------------------------------------------
++
++/*
++*/
++
++class WXDLLIMPEXP_BASE wxLocalStorageConfig : public wxConfigBase
++{
++public:
++  // ctor & dtor
++  wxLocalStorageConfig(const wxString& appName = wxEmptyString,
++                       const wxString& vendorName = wxEmptyString,
++                       const wxString& localFilename = wxEmptyString,
++                       const wxString& globalFilename = wxEmptyString,
++                       long style = 0);
++
++  virtual ~wxLocalStorageConfig();
++
++  // implement inherited pure virtual functions
++  // ------------------------------------------
++
++  // path management
++  virtual void SetPath(const wxString& strPath) wxOVERRIDE;
++  virtual const wxString& GetPath() const wxOVERRIDE { return m_strPath; }
++
++  // entry/subgroup info
++  // enumerate all of them
++  virtual bool GetFirstGroup(wxString& str, long& lIndex) const wxOVERRIDE;
++  virtual bool GetNextGroup (wxString& str, long& lIndex) const wxOVERRIDE;
++  virtual bool GetFirstEntry(wxString& str, long& lIndex) const wxOVERRIDE;
++  virtual bool GetNextEntry (wxString& str, long& lIndex) const wxOVERRIDE;
++
++  // tests for existence
++  virtual bool HasGroup(const wxString& strName) const wxOVERRIDE;
++  virtual bool HasEntry(const wxString& strName) const wxOVERRIDE;
++
++  // get number of entries/subgroups in the current group, with or without
++  // it's subgroups
++  virtual size_t GetNumberOfEntries(bool bRecursive = false) const wxOVERRIDE;
++  virtual size_t GetNumberOfGroups(bool bRecursive = false) const wxOVERRIDE;
++
++  virtual bool Flush(bool WXUNUSED(bCurrentOnly) = false) wxOVERRIDE { return true; }
++
++  // rename
++  virtual bool RenameEntry(const wxString& oldName, const wxString& newName) wxOVERRIDE;
++  virtual bool RenameGroup(const wxString& oldName, const wxString& newName) wxOVERRIDE;
++
++  // delete
++  virtual bool DeleteEntry(const wxString& key, bool bGroupIfEmptyAlso = true) wxOVERRIDE;
++  virtual bool DeleteGroup(const wxString& key) wxOVERRIDE;
++  virtual bool DeleteAll() wxOVERRIDE;
++
++protected:
++  virtual bool DoReadString(const wxString& key, wxString *pstr) const wxOVERRIDE;
++  virtual bool DoReadLong(const wxString& key, long *pl) const wxOVERRIDE;
++  virtual bool DoReadBool(const wxString& key, bool *pb) const wxOVERRIDE;
++#if wxUSE_BASE64
++  virtual bool DoReadBinary(const wxString& key, wxMemoryBuffer* buf) const wxOVERRIDE;
++#endif // wxUSE_BASE64
++
++  virtual bool DoWriteString(const wxString& key, const wxString& str) wxOVERRIDE;
++  virtual bool DoWriteLong(const wxString& key, long l) wxOVERRIDE;
++  virtual bool DoWriteBool(const wxString& key, bool b) wxOVERRIDE;
++#if wxUSE_BASE64
++  virtual bool DoWriteBinary(const wxString& key, const wxMemoryBuffer& buf) wxOVERRIDE;
++#endif // wxUSE_BASE64
++
++  wxString MakeEntryKey(const wxString& key) const;
++  wxString MakeGroupKey(const wxString& key) const;
++
++private:
++  // member variables
++  // ----------------
++  wxString  m_strPath;
++
++  wxDECLARE_NO_COPY_CLASS(wxLocalStorageConfig);
++  wxDECLARE_ABSTRACT_CLASS(wxLocalStorageConfig);
++};
++
++#endif // wxUSE_CONFIG
++
++#endif // _WX_WASM_CONFIG_H_
+diff --git a/include/wx/wasm/cursor.h b/include/wx/wasm/cursor.h
+new file mode 100644
+index 0000000000..90d2c0fb16
+--- /dev/null
++++ b/include/wx/wasm/cursor.h
+@@ -0,0 +1,56 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/cursor.h
++// Purpose:     wxCursor class
++// Author:      Adam Hilss
++// Copyright:   (c) 2022 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_CURSOR_H_
++#define _WX_WASM_CURSOR_H_
++
++#include "wx/gdiobj.h"
++#include "wx/gdicmn.h"
++
++class WXDLLIMPEXP_FWD_CORE wxColour;
++class WXDLLIMPEXP_FWD_CORE wxImage;
++
++//-----------------------------------------------------------------------------
++// wxCursor
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxCursor : public wxGDIObject
++{
++public:
++    wxCursor();
++    wxCursor(wxStockCursor id) { InitFromStock(id); }
++#if wxUSE_IMAGE
++    wxCursor(const wxImage & image);
++    wxCursor(const wxString& filename,
++             wxBitmapType type = wxCURSOR_DEFAULT_TYPE,
++             int hotSpotX = 0, int hotSpotY = 0);
++#endif
++    wxCursor(const char bits[], int width, int height,
++             int hotSpotX = -1, int hotSpotY = -1,
++             const char maskBits[] = NULL);
++    wxCursor(int cursorType);
++    virtual ~wxCursor() {}
++
++    void Install() const;
++
++protected:
++    void InitFromStock(wxStockCursor);
++#if wxUSE_IMAGE
++    void InitFromImage(const wxImage& image);
++#endif
++
++    virtual wxGDIRefData *CreateGDIRefData() const;
++    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
++
++private:
++    wxDECLARE_DYNAMIC_CLASS(wxCursor);
++};
++
++wxCursor wxGetCursor();
++
++#endif // _WX_WASM_CURSOR_H_
+diff --git a/include/wx/wasm/dataform.h b/include/wx/wasm/dataform.h
+new file mode 100644
+index 0000000000..a7dcd7084d
+--- /dev/null
++++ b/include/wx/wasm/dataform.h
+@@ -0,0 +1,49 @@
++///////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dataform.h
++// Purpose:     wxDataFormat class
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++///////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_DATAFORM_H
++#define _WX_WASM_DATAFORM_H
++
++class WXDLLIMPEXP_CORE wxDataFormat
++{
++public:
++    wxDataFormat();
++    wxDataFormat(wxDataFormatId type);
++    wxDataFormat(const wxDataFormat& format);
++
++    // we have to provide all the overloads to allow using strings instead of
++    // data formats (as a lot of existing code does)
++    wxDataFormat(const wxString& id) { InitFromString(id); }
++    wxDataFormat(const char *id) { InitFromString(id); }
++    wxDataFormat(const wchar_t *id) { InitFromString(id); }
++    wxDataFormat(const wxCStrData& id) { InitFromString(id); }
++
++    wxDataFormat& operator=(const wxDataFormat& format);
++
++    // comparison (must have both versions)
++    bool operator==(wxDataFormat format) const;
++    bool operator!=(wxDataFormat format) const;
++    bool operator==(wxDataFormatId type) const;
++    bool operator!=(wxDataFormatId type) const;
++
++    // string ids are used for custom types - this SetId() must be used for
++    // application-specific formats
++    wxString GetId() const;
++    void SetId(const wxString& id);
++
++    wxDataFormatId GetType() const;
++    void SetType(wxDataFormatId type);
++
++private:
++    void InitFromString(const wxString& id);
++
++    wxDataFormatId m_type;
++    wxString m_id;
++};
++
++#endif // _WX_WASM_DATAFORM_H
+diff --git a/include/wx/wasm/dataobj.h b/include/wx/wasm/dataobj.h
+new file mode 100644
+index 0000000000..2a8c1e52a3
+--- /dev/null
++++ b/include/wx/wasm/dataobj.h
+@@ -0,0 +1,28 @@
++///////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dataobj.h
++// Purpose:     wxDataObject class
++// Author:      Adam Hilss
++// Copyright:   (c) Adam Hilss
++// Licence:     LGPL v2
++///////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_DATAOBJ_H_
++#define _WX_WASM_DATAOBJ_H_
++
++// ----------------------------------------------------------------------------
++// wxDataObject is the same as wxDataObjectBase under wxWebAssembly
++// ----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxDataObject : public wxDataObjectBase
++{
++public:
++    wxDataObject() {}
++    virtual ~wxDataObject() {}
++
++    virtual wxDataFormat GetPreferredFormatForObject(const wxDataObject& obj, Direction dir) const;
++
++    wxDataFormat GetSupportedFormatInSource(wxDataObject *source) const;
++};
++
++#endif // _WX_WASM_DATAOBJ_H_
++
+diff --git a/include/wx/wasm/dataobj2.h b/include/wx/wasm/dataobj2.h
+new file mode 100644
+index 0000000000..595c2ae943
+--- /dev/null
++++ b/include/wx/wasm/dataobj2.h
+@@ -0,0 +1,95 @@
++///////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dataobj2.h
++// Purpose:     wxDataObject derived classes
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++///////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_DATAOBJ2_H_
++#define _WX_WASM_DATAOBJ2_H_
++
++// ----------------------------------------------------------------------------
++// wxBitmapDataObject is a specialization of wxDataObject for bitmaps
++// ----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxBitmapDataObject : public wxBitmapDataObjectBase
++{
++public:
++    // ctors
++    wxBitmapDataObject();
++    wxBitmapDataObject(const wxBitmap& bitmap);
++
++    // destr
++    virtual ~wxBitmapDataObject();
++
++    // override base class virtual to update PNG data too
++    virtual void SetBitmap(const wxBitmap& bitmap) wxOVERRIDE;
++
++    // implement base class pure virtuals
++    // ----------------------------------
++
++    virtual size_t GetDataSize() const wxOVERRIDE { return m_pngSize; }
++    virtual bool GetDataHere(void *buf) const wxOVERRIDE;
++    virtual bool SetData(size_t len, const void *buf) wxOVERRIDE;
++    // Must provide overloads to avoid hiding them (and warnings about it)
++    virtual size_t GetDataSize(const wxDataFormat&) const wxOVERRIDE
++    {
++        return GetDataSize();
++    }
++    virtual bool GetDataHere(const wxDataFormat&, void *buf) const wxOVERRIDE
++    {
++        return GetDataHere(buf);
++    }
++    virtual bool SetData(const wxDataFormat&, size_t len, const void *buf) wxOVERRIDE
++    {
++        return SetData(len, buf);
++    }
++
++protected:
++    void Clear() { delete [] m_pngData; }
++    void ClearAll() { Clear(); Init(); }
++
++    size_t      m_pngSize;
++    char       *m_pngData;
++
++    void DoConvertToPng();
++
++private:
++    void Init() { m_pngData = NULL; m_pngSize = 0; }
++};
++
++// ----------------------------------------------------------------------------
++// wxFileDataObject is a specialization of wxDataObject for file names
++// ----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxFileDataObject : public wxFileDataObjectBase
++{
++public:
++    // implement base class pure virtuals
++    // ----------------------------------
++
++    void AddFile(const wxString &filename);
++
++    virtual size_t GetDataSize() const;
++    virtual bool GetDataHere(void *buf) const;
++    virtual bool SetData(size_t len, const void *buf);
++
++private:
++    // Must provide overloads to avoid hiding them (and warnings about it)
++    virtual size_t GetDataSize(const wxDataFormat&) const
++    {
++        return GetDataSize();
++    }
++    virtual bool GetDataHere(const wxDataFormat&, void *buf) const
++    {
++        return GetDataHere(buf);
++    }
++    virtual bool SetData(const wxDataFormat&, size_t len, const void *buf)
++    {
++        return SetData(len, buf);
++    }
++};
++
++#endif // _WX_WASM_DATAOBJ2_H_
++
+diff --git a/include/wx/wasm/dc.h b/include/wx/wasm/dc.h
+new file mode 100644
+index 0000000000..aaaa4aeaa7
+--- /dev/null
++++ b/include/wx/wasm/dc.h
+@@ -0,0 +1,145 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dc.h
++// Purpose:     wxDC class
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_DC_H_
++#define _WX_WASM_DC_H_
++
++#include "wx/dc.h"
++
++enum wxPointMode {
++    wxPOINTMODE_POINTS,
++    wxPOINTMODE_LINES,
++    wxPOINTMODE_POLYGON
++};
++
++//-----------------------------------------------------------------------------
++// wxDC
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxWasmDCImpl: public wxDCImpl
++{
++public:
++    wxWasmDCImpl(wxDC *owner);
++    virtual ~wxWasmDCImpl() {}
++
++public:
++    // implement base class pure virtuals
++    // ----------------------------------
++
++    virtual void Clear();
++
++    virtual bool StartDoc(const wxString& WXUNUSED(message)) { return true; }
++    virtual void EndDoc(void) {}
++
++    virtual void StartPage(void) {}
++    virtual void EndPage(void) {}
++
++    virtual void SetFont(const wxFont& font);
++    virtual void SetPen(const wxPen& pen);
++    virtual void SetBrush(const wxBrush& brush);
++    virtual void SetBackground(const wxBrush& brush);
++    virtual void SetBackgroundMode(int mode) { m_backgroundMode = mode; }
++    virtual void SetPalette(const wxPalette& palette);
++
++    virtual void DestroyClippingRegion();
++
++    virtual wxCoord GetCharHeight() const;
++    virtual wxCoord GetCharWidth() const;
++    virtual void DoGetTextExtent(const wxString& string,
++                                 wxCoord *x, wxCoord *y,
++                                 wxCoord *descent = NULL,
++                                 wxCoord *externalLeading = NULL,
++                                 const wxFont *theFont = NULL) const;
++
++    virtual bool CanDrawBitmap() const;
++    virtual bool CanGetTextExtent() const;
++    virtual int GetDepth() const;
++    virtual wxSize GetPPI() const;
++
++    virtual void SetLogicalFunction(wxRasterOperationMode function);
++
++    virtual void SetTextForeground(const wxColour& colour) ;
++    virtual void SetTextBackground(const wxColour& colour) ;
++
++protected:
++    virtual void DoSetDeviceClippingRegion(const wxRegion& region);
++    virtual void DoSetClippingRegion(wxCoord x, wxCoord y,
++                                     wxCoord width, wxCoord height);
++
++    virtual void DoGetSizeMM(int* width, int* height) const;
++
++    virtual bool DoGetPixel(wxCoord x, wxCoord y, wxColour *col) const;
++
++    virtual void DoDrawPoint(wxCoord x, wxCoord y);
++
++    virtual void DoDrawLine(wxCoord x1, wxCoord y1, wxCoord x2, wxCoord y2);
++    virtual void DoDrawLines(int n, const wxPoint points[],
++                             wxCoord xoffset, wxCoord yoffset);
++
++    virtual void DoDrawPolygon(int n, const wxPoint points[],
++                               wxCoord xoffset, wxCoord yoffset,
++                               wxPolygonFillMode fillStyle = wxODDEVEN_RULE);
++
++    virtual void DoDrawRectangle(wxCoord x, wxCoord y,
++                                 wxCoord width, wxCoord height);
++    virtual void DoDrawRoundedRectangle(wxCoord x, wxCoord y,
++                                        wxCoord width, wxCoord height,
++                                        double radius);
++
++    virtual void DoDrawArc(wxCoord x1, wxCoord y1,
++                           wxCoord x2, wxCoord y2,
++                           wxCoord xc, wxCoord yc);
++
++    virtual void DoDrawEllipticArc(wxCoord x, wxCoord y, wxCoord w, wxCoord h,
++                                   double sa, double ea);
++
++    virtual void DoDrawEllipse(wxCoord x, wxCoord y,
++                               wxCoord width, wxCoord height);
++
++    virtual void DoDrawIcon(const wxIcon& icon, wxCoord x, wxCoord y);
++    virtual void DoDrawBitmap(const wxBitmap &bmp, wxCoord x, wxCoord y,
++                              bool useMask = false);
++
++    virtual bool DoBlit(wxCoord xdest, wxCoord ydest,
++                        wxCoord width, wxCoord height,
++                        wxDC *source,
++                        wxCoord xsrc, wxCoord ysrc,
++                        wxRasterOperationMode rop = wxCOPY,
++                        bool useMask = false,
++                        wxCoord xsrcMask = -1, wxCoord ysrcMask = -1);
++
++    virtual void DoCrossHair(wxCoord x, wxCoord y);
++
++    virtual void DoDrawText(const wxString& text, wxCoord x, wxCoord y);
++    virtual void DoDrawRotatedText(const wxString& text, wxCoord x, wxCoord y,
++                                   double angle);
++
++    virtual bool DoFloodFill(wxCoord x, wxCoord y, const wxColour& col,
++                             wxFloodFillStyle style = wxFLOOD_SURFACE);
++
++    inline double LogicalToDeviceDoubleX(wxCoord x) {
++        return static_cast<double>(LogicalToDeviceX(x));
++    }
++
++    inline double LogicalToDeviceDoubleY(wxCoord y) {
++        return static_cast<double>(LogicalToDeviceY(y));
++    }
++
++    // implementation
++    int GetJavascriptId() { return m_jsId; }
++    void SetJavascriptId(int jsId) { m_jsId = jsId; m_ok = true; }
++
++protected:
++    int m_jsId;
++    bool m_fontDirty;
++
++    DECLARE_ABSTRACT_CLASS(wxWasmDCImpl)
++    wxDECLARE_NO_COPY_CLASS(wxWasmDCImpl);
++};
++
++#endif // _WX_WASM_DC_H_
+diff --git a/include/wx/wasm/dcclient.h b/include/wx/wasm/dcclient.h
+new file mode 100644
+index 0000000000..fcea0236ac
+--- /dev/null
++++ b/include/wx/wasm/dcclient.h
+@@ -0,0 +1,63 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dcclient.h
++// Purpose:     wxWindowDC, wxClientDC, wxPaintDC classes
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef __WX_WASM_DCCLIENT_H__
++#define __WX_WASM_DCCLIENT_H__
++
++#include "wx/wasm/dc.h"
++
++//-----------------------------------------------------------------------------
++// wxWindowDCImpl
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxWindowDCImpl: public wxWasmDCImpl
++{
++public:
++    wxWindowDCImpl(wxDC *owner, wxWindow *win, bool isClient = false);
++    virtual ~wxWindowDCImpl(void);
++
++    virtual void DoGetSize(int *width, int *height) const wxOVERRIDE;
++
++protected:
++    wxDECLARE_DYNAMIC_CLASS(wxWindowDCImpl);
++    wxDECLARE_NO_COPY_CLASS(wxWindowDCImpl);
++
++    void Create(const wxRect& rect);
++};
++
++//-----------------------------------------------------------------------------
++// wxClientDCImpl
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxClientDCImpl: public wxWindowDCImpl
++{
++public:
++    wxClientDCImpl(wxDC *owner, wxWindow *win);
++    virtual ~wxClientDCImpl(void);
++
++protected:
++    wxDECLARE_DYNAMIC_CLASS(wxClientDCImpl);
++    wxDECLARE_NO_COPY_CLASS(wxClientDCImpl);
++};
++
++//-----------------------------------------------------------------------------
++// wxPaintDCImpl
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxPaintDCImpl: public wxClientDCImpl
++{
++public:
++    wxPaintDCImpl(wxDC *owner, wxWindow *win);
++    virtual ~wxPaintDCImpl(void);
++
++protected:
++    wxDECLARE_DYNAMIC_CLASS(wxPaintDCImpl);
++    wxDECLARE_NO_COPY_CLASS(wxPaintDCImpl);
++};
++
++#endif // __WX_WASM_DCCLIENT_H__
+diff --git a/include/wx/wasm/dcmemory.h b/include/wx/wasm/dcmemory.h
+new file mode 100644
+index 0000000000..60e683178c
+--- /dev/null
++++ b/include/wx/wasm/dcmemory.h
+@@ -0,0 +1,47 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dcmemory.h
++// Purpose:     wxMemoryDC class
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef __WX_WASM_DCMEMORY_H__
++#define __WX_WASM_DCMEMORY_H__
++
++#include "wx/wasm/dc.h"
++
++#include "wx/bitmap.h"
++#include "wx/dcmemory.h"
++
++//-----------------------------------------------------------------------------
++// wxMemoryDCImpl
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxMemoryDCImpl: public wxWasmDCImpl
++{
++public:
++    wxMemoryDCImpl(wxMemoryDC *owner);
++    wxMemoryDCImpl(wxMemoryDC *owner, wxBitmap& bitmap);
++    wxMemoryDCImpl(wxMemoryDC *owner, wxDC *dc);
++
++    virtual ~wxMemoryDCImpl(void);
++
++    virtual void DoGetSize(int *width, int *height) const wxOVERRIDE;
++    virtual void DoSelect(const wxBitmap& WXUNUSED(bmp)) wxOVERRIDE;
++
++    virtual const wxBitmap& GetSelectedBitmap() const wxOVERRIDE { return m_bitmap; }
++    virtual wxBitmap& GetSelectedBitmap() wxOVERRIDE { return m_bitmap; }
++
++protected:
++    void Init();
++
++    void Deselect();
++
++    wxBitmap m_bitmap;
++
++    wxDECLARE_DYNAMIC_CLASS(wxMemoryDCImpl);
++    wxDECLARE_NO_COPY_CLASS(wxMemoryDCImpl);
++};
++
++#endif // __WX_WASM_DCMEMORY_H__
+diff --git a/include/wx/wasm/dcscreen.h b/include/wx/wasm/dcscreen.h
+new file mode 100644
+index 0000000000..9efb8d3456
+--- /dev/null
++++ b/include/wx/wasm/dcscreen.h
+@@ -0,0 +1,32 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dcscreen.h
++// Purpose:     wxScreenDC class
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef __WX_WASM_DCSCREEN_H__
++#define __WX_WASM_DCSCREEN_H__
++
++#include "wx/dcscreen.h"
++#include "wx/wasm/dc.h"
++
++//-----------------------------------------------------------------------------
++// wxScreenDCImpl
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxScreenDCImpl: public wxWasmDCImpl
++{
++public:
++    wxScreenDCImpl(wxScreenDC *owner);
++    virtual ~wxScreenDCImpl(void);
++
++    virtual void DoGetSize(int *width, int *height) const wxOVERRIDE;
++
++protected:
++    wxDECLARE_DYNAMIC_CLASS(wxScreenDCImpl);
++    wxDECLARE_NO_COPY_CLASS(wxScreenDCImpl);
++};
++
++#endif // __WX_WASM_DCSCREEN_H__
+diff --git a/include/wx/wasm/dnd.h b/include/wx/wasm/dnd.h
+new file mode 100644
+index 0000000000..bb095f629d
+--- /dev/null
++++ b/include/wx/wasm/dnd.h
+@@ -0,0 +1,89 @@
++///////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/dnd.h
++// Purpose:     
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++///////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_DND_H_
++#define _WX_WASM_DND_H_
++
++#include "wx/event.h"
++#include "wx/icon.h"
++
++// ----------------------------------------------------------------------------
++// macros
++// ----------------------------------------------------------------------------
++
++// this macro may be used instead for wxDropSource ctor arguments: it will use
++// the cursor 'name' from an XPM file under Wasm, but will expand to something
++// else under MSW. If you don't use it, you will have to use #ifdef in the
++// application code.
++#define wxDROP_ICON(name)   wxCursor(X##_xpm)
++
++//-------------------------------------------------------------------------
++// wxDropTarget
++//-------------------------------------------------------------------------
++
++//-------------------------------------------------------------------------
++// wxDropSource
++//-------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxDropSource: public wxDropSourceBase
++{
++public:
++    wxDropSource(wxWindow *win = NULL,
++                 const wxCursor &copy = wxNullCursor,
++                 const wxCursor &move = wxNullCursor,
++                 const wxCursor &none = wxNullCursor);
++
++    virtual ~wxDropSource();
++
++    virtual wxDragResult DoDragDrop(int flags = wxDrag_CopyOnly);
++
++    virtual void OnDragResult(wxDragResult WXUNUSED(result)) { }
++
++    static bool IsDragInProgress();
++    static void HandleMouseEvent(wxMouseEvent *event);
++
++private:
++    void StartDrag();
++    void EndDrag(wxDragResult result);
++
++    const wxCursor& GetCursor(wxDragResult res) const;
++
++    bool UseAlternateResult();
++    wxDragResult GetDefaultDragResult();
++    void UpdateDesiredDragResult(wxDragResult desiredResult);
++
++    bool HandleMouseEvent(wxMouseEvent* event, wxDragResult* result);
++
++    int m_dropFlags;
++    
++    wxWindow *m_overWindow;        // Current mouse over window
++
++    wxPoint m_startPosition;       // Mouse position when drag started
++    wxCursor m_startCursor;        // Cursor when drag started
++
++    bool m_lastMouseEventValid;
++    wxMouseEvent m_lastMouseEvent; // Last mouse event received during drag
++
++    wxDragResult m_desiredResult;
++};
++
++class WXDLLIMPEXP_CORE wxDropTarget: public wxDropTargetBase
++{
++public:
++    wxDropTarget(wxDataObject *dataObject = NULL);
++
++    virtual bool OnDrop(wxCoord x, wxCoord y);
++    virtual wxDragResult OnData(wxCoord x, wxCoord y, wxDragResult def);
++    virtual bool GetData();
++
++    virtual wxDataFormat GetMatchingPair();
++};
++
++
++#endif // _WX_WASM_DND_H_
++
+diff --git a/include/wx/wasm/evtloop.h b/include/wx/wasm/evtloop.h
+new file mode 100644
+index 0000000000..2fc41240aa
+--- /dev/null
++++ b/include/wx/wasm/evtloop.h
+@@ -0,0 +1,39 @@
++///////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/evtloop.h
++// Purpose:     
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++///////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_EVTLOOP_H_
++#define _WX_WASM_EVTLOOP_H_
++
++#include "wx/evtloop.h"
++
++// ----------------------------------------------------------------------------
++// wxGUIEventLoop for wxWebAssembly
++// ----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxGUIEventLoop : public wxEventLoopBase
++{
++public:
++    wxGUIEventLoop() {}
++
++    virtual bool IsOk() const { return true; }
++
++    virtual void ScheduleExit(int rc = 0);
++    virtual bool Pending() const;
++    virtual bool Dispatch();
++    virtual int DispatchTimeout(unsigned long timeout);
++    virtual void WakeUp();
++
++protected:
++    virtual int DoRun();
++    virtual void DoYieldFor(long eventsToProcess);
++
++private:
++    wxDECLARE_NO_COPY_CLASS(wxGUIEventLoop);
++};
++
++#endif // _WX_WASM_EVTLOOP_H_
+diff --git a/include/wx/wasm/font.h b/include/wx/wasm/font.h
+new file mode 100644
+index 0000000000..92287c13d7
+--- /dev/null
++++ b/include/wx/wasm/font.h
+@@ -0,0 +1,98 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/font.h
++// Purpose:
++// Author:      Adam Hilss
++// Copyright:   (c) 1998 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_FONT_H_
++#define _WX_WASM_FONT_H_
++
++// ----------------------------------------------------------------------------
++// wxFont
++// ----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxFont : public wxFontBase
++{
++public:
++    wxFont();
++    wxFont(const wxFontInfo& info);
++    wxFont(const wxString& nativeFontInfoString);
++    wxFont(const wxNativeFontInfo& info);
++    wxFont(int size,
++           wxFontFamily family,
++           wxFontStyle style,
++           wxFontWeight weight,
++           bool underlined = false,
++           const wxString& face = wxEmptyString,
++           wxFontEncoding encoding = wxFONTENCODING_DEFAULT);
++    wxFont(const wxSize& pixelSize,
++           wxFontFamily family,
++           wxFontStyle style,
++           wxFontWeight weight,
++           bool underlined = false,
++           const wxString& face = wxEmptyString,
++           wxFontEncoding encoding = wxFONTENCODING_DEFAULT);
++    virtual ~wxFont();
++
++    bool Create(int size,
++                wxFontFamily family,
++                wxFontStyle style,
++                wxFontWeight weight,
++                bool underlined = false,
++                const wxString& face = wxEmptyString,
++                wxFontEncoding encoding = wxFONTENCODING_DEFAULT);
++
++    // implement base class pure virtuals
++    virtual double GetFractionalPointSize() const;
++    virtual wxFontStyle GetStyle() const;
++    virtual wxFontWeight GetWeight() const;
++    virtual int GetNumericWeight() const;
++    virtual bool GetUnderlined() const;
++    virtual bool GetStrikethrough() const;
++    virtual wxString GetFaceName() const;
++    virtual wxFontEncoding GetEncoding() const;
++    virtual const wxNativeFontInfo *GetNativeFontInfo() const;
++
++    virtual void SetFractionalPointSize(double pointSize);
++    virtual void SetFamily(wxFontFamily family);
++    virtual void SetStyle(wxFontStyle style);
++    virtual void SetWeight(wxFontWeight weight);
++    virtual void SetNumericWeight(int weight);
++    virtual void SetUnderlined(bool underlined);
++    virtual void SetStrikethrough(bool strikethrough);
++    virtual bool SetFaceName(const wxString& faceName);
++    virtual void SetEncoding(wxFontEncoding encoding);
++
++    wxDECLARE_COMMON_FONT_METHODS();
++
++    wxDEPRECATED_MSG("use wxFONT{FAMILY,STYLE,WEIGHT}_XXX constants")
++    wxFont(int size,
++           int family,
++           int style,
++           int weight,
++           bool underlined = false,
++           const wxString& face = wxEmptyString,
++           wxFontEncoding encoding = wxFONTENCODING_DEFAULT)
++    {
++        (void)Create(size, (wxFontFamily)family, (wxFontStyle)style, (wxFontWeight)weight, underlined, face, encoding);
++    }
++
++    void GetTextExtent(const wxString &string,
++                       wxCoord *x, wxCoord *y,
++                       wxCoord *descent,
++                       wxCoord *externalLeading) const;
++
++    void GetCharSize(wxCoord *x, wxCoord *y) const;
++
++protected:
++    virtual wxFontFamily DoGetFamily() const;
++
++    virtual wxGDIRefData* CreateGDIRefData() const;
++    virtual wxGDIRefData* CloneGDIRefData(const wxGDIRefData* data) const;
++
++    wxDECLARE_DYNAMIC_CLASS(wxFont);
++};
++
++#endif // _WX_WASM_FONT_H_
+diff --git a/include/wx/wasm/nonownedwnd.h b/include/wx/wasm/nonownedwnd.h
+new file mode 100644
+index 0000000000..9b76fa8fd5
+--- /dev/null
++++ b/include/wx/wasm/nonownedwnd.h
+@@ -0,0 +1,71 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/nonownedwnd.h
++// Purpose:
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_NONOWNEDWND_H_
++#define _WX_WASM_NONOWNEDWND_H_
++
++#include <queue>
++
++class WXDLLIMPEXP_CORE wxNonOwnedWindow : public wxNonOwnedWindowBase
++{
++public:
++    // construction
++    wxNonOwnedWindow() { Init(); }
++    wxNonOwnedWindow(wxWindow *parent,
++                     wxWindowID id,
++                     const wxPoint& pos = wxDefaultPosition,
++                     const wxSize& size = wxDefaultSize,
++                     long style = 0,
++                     const wxString& name = wxPanelNameStr)
++    {
++        Init();
++        Create(parent, id, pos, size, style, name);
++    }
++
++    bool Create(wxWindow *parent,
++                wxWindowID id,
++                const wxPoint& pos = wxDefaultPosition,
++                const wxSize& size = wxDefaultSize,
++                long style = 0,
++                const wxString& name = wxPanelNameStr);
++
++    virtual ~wxNonOwnedWindow();
++
++    virtual bool Show(bool show = true) wxOVERRIDE;
++
++    virtual void Raise() wxOVERRIDE;
++    virtual void Lower() wxOVERRIDE;
++
++    virtual void SetSizer(wxSizer *sizer, bool deleteOld = true);
++
++    virtual wxString GetCSSClassList() const { return "window"; }
++
++    bool IsMainFrame() const;
++
++    int GetCSSId() const { return m_cssId; }
++
++    void HandlePaintRequests();
++
++protected:
++    virtual void DoSetSize(int x, int y,
++                           int width, int height,
++                           int sizeFlags = wxSIZE_AUTO) wxOVERRIDE;
++
++    virtual void OnAnimationFrame() {}
++
++    void SetCSSId(int cssId) { m_cssId = cssId; }
++
++private:
++    void Init();
++
++    int m_cssId;
++
++    friend class wxApp;
++};
++
++#endif // _WX_WASM_NONOWNEDWND_H_
+diff --git a/include/wx/wasm/pen.h b/include/wx/wasm/pen.h
+new file mode 100644
+index 0000000000..904e5a54fe
+--- /dev/null
++++ b/include/wx/wasm/pen.h
+@@ -0,0 +1,63 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/pen.h
++// Purpose:
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_PEN_H_
++#define _WX_WASM_PEN_H_
++
++typedef signed char wxWasmDash;
++
++//-----------------------------------------------------------------------------
++// wxPen
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxPen: public wxPenBase
++{
++public:
++    wxPen() : wxPen(*wxBLACK) { }
++    wxPen(const wxColour &colour, int width = 1, wxPenStyle style = wxPENSTYLE_SOLID);
++
++    wxPen(const wxBitmap& stipple, int width);
++
++    virtual ~wxPen();
++
++    bool operator==(const wxPen& pen) const;
++    bool operator!=(const wxPen& pen) const { return !(*this == pen); }
++
++    void SetColour(const wxColour &colour);
++    void SetColour(unsigned char red, unsigned char green, unsigned char blue);
++    void SetWidth(int width);
++    void SetStyle(wxPenStyle style);
++    void SetStipple(const wxBitmap& stipple);
++    void SetDashes(int number_of_dashes, const wxDash *dash);
++    void SetJoin(wxPenJoin join);
++    void SetCap(wxPenCap cap);
++
++    wxColour GetColour() const;
++    int GetWidth() const;
++    wxPenStyle GetStyle() const;
++    wxBitmap *GetStipple() const;
++    int GetDashes(wxDash **ptr) const;
++    int GetDashCount() const;
++    wxDash* GetDash() const;
++    wxPenJoin GetJoin() const;
++    wxPenCap GetCap() const;
++
++    wxDEPRECATED_MSG("use wxPENSTYLE_XXX constants")
++    wxPen(const wxColour& col, int width, int style);
++
++    wxDEPRECATED_MSG("use wxPENSTYLE_XXX constants")
++    void SetStyle(int style) { SetStyle((wxPenStyle)style); }
++
++protected:
++    virtual wxGDIRefData *CreateGDIRefData() const;
++    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
++
++    wxDECLARE_DYNAMIC_CLASS(wxPen);
++};
++
++#endif // _WX_WASM_PEN_H_
+diff --git a/include/wx/wasm/popupwin.h b/include/wx/wasm/popupwin.h
+new file mode 100644
+index 0000000000..931cc617c0
+--- /dev/null
++++ b/include/wx/wasm/popupwin.h
+@@ -0,0 +1,37 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/popupwin.h
++// Purpose:
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_POPUPWIN_H_
++#define _WX_WASM_POPUPWIN_H_
++
++//-----------------------------------------------------------------------------
++// wxPopUpWindow
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxPopupWindow: public wxPopupWindowBase
++{
++public:
++    wxPopupWindow() { }
++    wxPopupWindow(wxWindow *parent, int flags = wxBORDER_NONE)
++        { (void)Create(parent, flags); }
++    virtual ~wxPopupWindow();
++
++    bool Create(wxWindow *parent, int flags = wxBORDER_NONE);
++
++    virtual wxString GetCSSClassList() const wxOVERRIDE {
++      return wxNonOwnedWindow::GetCSSClassList() + " popup";
++    }
++
++protected:
++#ifdef __WXUNIVERSAL__
++    wxDECLARE_EVENT_TABLE();
++#endif
++    wxDECLARE_DYNAMIC_CLASS(wxPopupWindow);
++};
++
++#endif // _WX_WASM_POPUPWIN_H_
+diff --git a/include/wx/wasm/private.h b/include/wx/wasm/private.h
+new file mode 100644
+index 0000000000..d71b852b0f
+--- /dev/null
++++ b/include/wx/wasm/private.h
+@@ -0,0 +1,18 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/private.h
++// Purpose:     
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_PRIVATE_H_
++#define _WX_WASM_PRIVATE_H_
++
++#include <wx/string.h>
++
++/*
++pp::FileSystem *GetFileSystem();
++*/
++
++#endif // _WX_WASM_PRIVATE_H_
+diff --git a/include/wx/wasm/private/display.h b/include/wx/wasm/private/display.h
+new file mode 100644
+index 0000000000..a94c61519b
+--- /dev/null
++++ b/include/wx/wasm/private/display.h
+@@ -0,0 +1,37 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/private/display.h
++// Purpose:     
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_PRIVATE_DISPLAY_H_
++#define _WX_WASM_PRIVATE_DISPLAY_H_
++
++#include "wx/gdicmn.h"
++
++// ----------------------------------------------------------------------------
++// wxWasmDisplay
++// ----------------------------------------------------------------------------
++
++class wxWasmDisplay
++{
++public:
++    wxWasmDisplay();
++    virtual ~wxWasmDisplay() { }
++    
++    inline wxSize GetScreenSize() const { return m_screenSize; }
++    void SetScreenSize(const wxSize& screenSize) { m_screenSize = screenSize; }
++
++    inline double GetDeviceScaleFactor() const { return m_deviceScaleFactor; }
++    inline double GetContentScaleFactor() const { return m_contentScaleFactor; }
++    void UpdateScaleFactor();
++
++private:
++    wxSize m_screenSize;
++    double m_deviceScaleFactor;
++    double m_contentScaleFactor;
++};
++
++#endif // _WX_WASM_PRIVATE_DISPLAY_H_
+diff --git a/include/wx/wasm/private/keyboard.h b/include/wx/wasm/private/keyboard.h
+new file mode 100644
+index 0000000000..149bc7233a
+--- /dev/null
++++ b/include/wx/wasm/private/keyboard.h
+@@ -0,0 +1,21 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/private/keyboard.h
++// Purpose:     Keyboard event converter
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_PRIVATE_KEYBOARD_H_
++#define _WX_WASM_PRIVATE_KEYBOARD_H_
++
++#include "wx/event.h"
++
++bool EmscriptenKeyboardEventToWXEvent(int emscriptenEventType,
++                                      const EmscriptenKeyboardEvent &emscriptenEvent,
++                                      wxKeyEvent *keyEvent);
++
++bool KeyCodeNeedsKeyDownEvent(int keyCode);
++bool KeyCodeNeedsCharEvent(int keyCode);
++
++#endif // _WX_WASM_PRIVATE_KEYBOARD_H_
+diff --git a/include/wx/wasm/private/mouse.h b/include/wx/wasm/private/mouse.h
+new file mode 100644
+index 0000000000..4cc60bbeb3
+--- /dev/null
++++ b/include/wx/wasm/private/mouse.h
+@@ -0,0 +1,25 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/private/mouse.h
++// Purpose:     Mouse event converter
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_PRIVATE_MOUSE_H_
++#define _WX_WASM_PRIVATE_MOUSE_H_
++
++#include "wx/event.h"
++
++#include <emscripten/html5.h>
++
++bool EmscriptenMouseEventToWXEvent(int emscriptenEventType,
++                                   const EmscriptenMouseEvent &emscriptenEvent,
++                                   wxMouseEvent *mouseEvent);
++
++bool EmscriptenWheelEventToWXEvent(const EmscriptenWheelEvent &emscriptenEvent,
++                                   wxOrientation orientation,
++                                   wxMouseEvent *mouseEvent);
++
++
++#endif // _WX_WASM_PRIVATE_MOUSE_H_
+diff --git a/include/wx/wasm/private/timer.h b/include/wx/wasm/private/timer.h
+new file mode 100644
+index 0000000000..6dea1b278b
+--- /dev/null
++++ b/include/wx/wasm/private/timer.h
+@@ -0,0 +1,66 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/private/timer.h
++// Purpose:     
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_PRIVATE_TIMER_H_
++#define _WX_WASM_PRIVATE_TIMER_H_
++
++#if wxUSE_TIMER
++
++#include "wx/private/timer.h"
++
++class WXDLLIMPEXP_FWD_CORE TimerCallbackFunc;
++
++//-----------------------------------------------------------------------------
++// wxTimerImpl
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxWasmTimerImpl : public wxTimerImpl
++{
++public:
++    wxWasmTimerImpl(wxTimer* timer)
++      : wxTimerImpl(timer),
++        m_callbackFunc(NULL) { }
++
++    virtual bool Start(int millisecs = -1, bool oneShot = false);
++    virtual void Stop();
++    virtual bool IsRunning() const { return m_callbackFunc != NULL; }
++
++protected:
++    void ScheduleFirstInterval();
++    void ScheduleNextInterval();
++
++    void ScheduleTimerCallback(int millisecs, TimerCallbackFunc *callbackFunc);
++
++    TimerCallbackFunc *m_callbackFunc;
++    wxLongLong m_deadlineMs;
++
++    friend class TimerCallbackFunc;
++};
++
++class WXDLLIMPEXP_CORE TimerCallbackFunc : public wxObject
++{
++public:
++    TimerCallbackFunc(wxWasmTimerImpl* timer)
++        : m_timer(timer),
++          m_canceled(false) { }
++
++    void Run();
++
++    wxWasmTimerImpl *GetTimerImpl() const { return m_timer; }
++
++    bool IsCanceled() const { return m_canceled; }
++    void Cancel() { m_canceled = true; }
++
++private:
++    wxWasmTimerImpl *m_timer;
++    bool m_canceled;
++};
++
++#endif // wxUSE_TIMER
++
++#endif // _WX_WASM_PRIVATE_TIMER_H_
+diff --git a/include/wx/wasm/pthread.h b/include/wx/wasm/pthread.h
+new file mode 100644
+index 0000000000..ce00caf8a6
+--- /dev/null
++++ b/include/wx/wasm/pthread.h
+@@ -0,0 +1,35 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/thread.h
++// Purpose:     Dummy implementations of unsupported pthread functions.
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_PTHREAD_H__
++#define _WX_WASM_PTHREAD_H__
++
++#include <pthread.h>
++#include <sched.h>
++
++int pthread_attr_getschedpolicy(const pthread_attr_t *attr,
++                                int *policy);
++
++//int pthread_attr_getschedparam(const pthread_attr_t *attr,
++//                               struct sched_param *param);
++
++int pthread_attr_setschedparam(pthread_attr_t *attr,
++                               const struct sched_param *param);
++
++int pthread_setschedparam(pthread_t thread,
++                          int policy,
++                          const struct sched_param *param);
++
++int pthread_setconcurrency(int new_level);
++
++int sched_get_priority_min(int policy);
++
++int sched_get_priority_max(int policy);
++
++
++#endif // _WX_WASM_PTHREAD_H__
+diff --git a/include/wx/wasm/region.h b/include/wx/wasm/region.h
+new file mode 100644
+index 0000000000..c6714486f8
+--- /dev/null
++++ b/include/wx/wasm/region.h
+@@ -0,0 +1,64 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/region.h
++// Purpose:     
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_REGION_H__
++#define _WX_WASM_REGION_H__
++
++#include "wx/generic/region.h"
++
++class WXDLLIMPEXP_CORE wxRegion : public wxRegionGeneric
++{
++public:
++    wxRegion(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
++    :   wxRegionGeneric(x,y,w,h)
++    {}
++    wxRegion(const wxPoint& topLeft, const wxPoint& bottomRight)
++    :   wxRegionGeneric(topLeft, bottomRight)
++    {}
++    wxRegion(const wxRect& rect)
++    :   wxRegionGeneric(rect)
++    {}
++    wxRegion(size_t n, const wxPoint *points, wxPolygonFillMode fillStyle = wxODDEVEN_RULE)
++    :   wxRegionGeneric(n, points, fillStyle)
++    {}
++    wxRegion(const wxBitmap& bmp)
++    :   wxRegionGeneric()
++        { Union(bmp); }
++    wxRegion(const wxBitmap& bmp,
++             const wxColour& transColour, int tolerance = 0)
++    :   wxRegionGeneric()
++        { Union(bmp, transColour, tolerance); }
++    virtual ~wxRegion() {}
++    wxRegion(const wxRegion& r)
++    :   wxRegionGeneric(r)
++    {}
++    wxRegion() {}
++    wxRegion& operator= (const wxRegion& r)
++    {   return *(wxRegion*)&(this->wxRegionGeneric::operator=(r)); }
++
++private:
++    wxDECLARE_DYNAMIC_CLASS(wxRegion);
++};
++
++class WXDLLIMPEXP_CORE wxRegionIterator : public wxRegionIteratorGeneric
++{
++public:
++    wxRegionIterator() {}
++    wxRegionIterator(const wxRegion& region)
++    :   wxRegionIteratorGeneric(region)
++    {}
++    wxRegionIterator(const wxRegionIterator& iterator)
++    :   wxRegionIteratorGeneric(iterator)
++    {}
++    virtual ~wxRegionIterator() {}
++
++    wxRegionIterator& operator=(const wxRegionIterator& iter)
++    {   return *(wxRegionIterator*)&(this->wxRegionIteratorGeneric::operator=(iter)); }
++};
++
++#endif // _WX_WASM_REGION_H__
+diff --git a/include/wx/wasm/setup.h b/include/wx/wasm/setup.h
+new file mode 100644
+index 0000000000..5a68a22ce3
+--- /dev/null
++++ b/include/wx/wasm/setup.h
+@@ -0,0 +1,1500 @@
++///////////////////////////////////////////////////////////////////////////////
++// Name:        wx/setup_inc.h
++// Purpose:     setup.h settings
++// Author:      Vadim Zeitlin
++// Modified by:
++// Created:
++// Copyright:   (c) Vadim Zeitlin
++// Licence:     LGPL v2
++///////////////////////////////////////////////////////////////////////////////
++
++// ----------------------------------------------------------------------------
++// global settings
++// ----------------------------------------------------------------------------
++
++// define this to 0 when building wxBase library - this can also be done from
++// makefile/project file overriding the value here
++#ifndef wxUSE_GUI
++    #define wxUSE_GUI            1
++#endif // wxUSE_GUI
++
++// ----------------------------------------------------------------------------
++// compatibility settings
++// ----------------------------------------------------------------------------
++
++// This setting determines the compatibility with 2.6 API: set it to 0 to
++// flag all cases of using deprecated functions.
++//
++// Default is 1 but please try building your code with 0 as the default will
++// change to 0 in the next version and the deprecated functions will disappear
++// in the version after it completely.
++//
++// Recommended setting: 0 (please update your code)
++#define WXWIN_COMPATIBILITY_2_6 0
++
++// This setting determines the compatibility with 2.8 API: set it to 0 to
++// flag all cases of using deprecated functions.
++//
++// Default is 1 but please try building your code with 0 as the default will
++// change to 0 in the next version and the deprecated functions will disappear
++// in the version after it completely.
++//
++// Recommended setting: 0 (please update your code)
++#define WXWIN_COMPATIBILITY_2_8 1
++
++// MSW-only: Set to 0 for accurate dialog units, else 1 for old behaviour when
++// default system font is used for wxWindow::GetCharWidth/Height() instead of
++// the current font.
++//
++// Default is 0
++//
++// Recommended setting: 0
++#define wxDIALOG_UNIT_COMPATIBILITY   0
++
++// ----------------------------------------------------------------------------
++// debugging settings
++// ----------------------------------------------------------------------------
++
++// wxDEBUG_LEVEL will be defined as 1 in wx/debug.h so normally there is no
++// need to define it here. You may do it for two reasons: either completely
++// disable/compile out the asserts in release version (then do it inside #ifdef
++// NDEBUG) or, on the contrary, enable more asserts, including the usually
++// disabled ones, in the debug build (then do it inside #ifndef NDEBUG)
++//
++// #ifdef NDEBUG
++//  #define wxDEBUG_LEVEL 0
++// #else
++//  #define wxDEBUG_LEVEL 2
++// #endif
++
++// wxHandleFatalExceptions() may be used to catch the program faults at run
++// time and, instead of terminating the program with a usual GPF message box,
++// call the user-defined wxApp::OnFatalException() function. If you set
++// wxUSE_ON_FATAL_EXCEPTION to 0, wxHandleFatalExceptions() will not work.
++//
++// This setting is for Win32 only and can only be enabled if your compiler
++// supports Win32 structured exception handling (currently only VC++ does)
++//
++// Default is 1
++//
++// Recommended setting: 1 if your compiler supports it.
++#define wxUSE_ON_FATAL_EXCEPTION 1
++
++// Set this to 1 to be able to generate a human-readable (unlike
++// machine-readable minidump created by wxCrashReport::Generate()) stack back
++// trace when your program crashes using wxStackWalker
++//
++// Default is 1 if supported by the compiler.
++//
++// Recommended setting: 1, set to 0 if your programs never crash
++#define wxUSE_STACKWALKER 1
++
++// Set this to 1 to compile in wxDebugReport class which allows you to create
++// and optionally upload to your web site a debug report consisting of back
++// trace of the crash (if wxUSE_STACKWALKER == 1) and other information.
++//
++// Default is 1 if supported by the compiler.
++//
++// Recommended setting: 1, it is compiled into a separate library so there
++//                         is no overhead if you don't use it
++#define wxUSE_DEBUGREPORT 1
++
++// Generic comment about debugging settings: they are very useful if you don't
++// use any other memory leak detection tools such as Purify/BoundsChecker, but
++// are probably redundant otherwise. Also, Visual C++ CRT has the same features
++// as wxWidgets memory debugging subsystem built in since version 5.0 and you
++// may prefer to use it instead of built in memory debugging code because it is
++// faster and more fool proof.
++//
++// Using VC++ CRT memory debugging is enabled by default in debug build (_DEBUG
++// is defined) if wxUSE_GLOBAL_MEMORY_OPERATORS is *not* enabled (i.e. is 0)
++// and if __NO_VC_CRTDBG__ is not defined.
++
++// The rest of the options in this section are obsolete and not supported,
++// enable them at your own risk.
++
++// If 1, enables wxDebugContext, for writing error messages to file, etc. If
++// __WXDEBUG__ is not defined, will still use the normal memory operators.
++//
++// Default is 0
++//
++// Recommended setting: 0
++#define wxUSE_DEBUG_CONTEXT 0
++
++// If 1, enables debugging versions of wxObject::new and wxObject::delete *IF*
++// __WXDEBUG__ is also defined.
++//
++// WARNING: this code may not work with all architectures, especially if
++// alignment is an issue. This switch is currently ignored for mingw / cygwin
++//
++// Default is 0
++//
++// Recommended setting: 1 if you are not using a memory debugging tool, else 0
++#define wxUSE_MEMORY_TRACING 0
++
++// In debug mode, cause new and delete to be redefined globally.
++// If this causes problems (e.g. link errors which is a common problem
++// especially if you use another library which also redefines the global new
++// and delete), set this to 0.
++// This switch is currently ignored for mingw / cygwin
++//
++// Default is 0
++//
++// Recommended setting: 0
++#define wxUSE_GLOBAL_MEMORY_OPERATORS 0
++
++// In debug mode, causes new to be defined to be WXDEBUG_NEW (see object.h). If
++// this causes problems (e.g. link errors), set this to 0. You may need to set
++// this to 0 if using templates (at least for VC++). This switch is currently
++// ignored for MinGW/Cygwin.
++//
++// Default is 0
++//
++// Recommended setting: 0
++#define wxUSE_DEBUG_NEW_ALWAYS 0
++
++
++// ----------------------------------------------------------------------------
++// Unicode support
++// ----------------------------------------------------------------------------
++
++// These settings are obsolete: the library is always built in Unicode mode
++// now, only set wxUSE_UNICODE to 0 to compile legacy code in ANSI mode if
++// absolutely necessary -- updating it is strongly recommended as the ANSI mode
++// will disappear completely in future wxWidgets releases.
++#ifndef wxUSE_UNICODE
++    #define wxUSE_UNICODE 1
++#endif
++
++// wxUSE_WCHAR_T is required by wxWidgets now, don't change.
++#define wxUSE_WCHAR_T 1
++
++// ----------------------------------------------------------------------------
++// global features
++// ----------------------------------------------------------------------------
++
++// Compile library in exception-safe mode? If set to 1, the library will try to
++// behave correctly in presence of exceptions (even though it still will not
++// use the exceptions itself) and notify the user code about any unhandled
++// exceptions. If set to 0, propagation of the exceptions through the library
++// code will lead to undefined behaviour -- but the code itself will be
++// slightly smaller and faster.
++//
++// Note that like wxUSE_THREADS this option is automatically set to 0 if
++// wxNO_EXCEPTIONS is defined.
++//
++// Default is 1
++//
++// Recommended setting: depends on whether you intend to use C++ exceptions
++//                      in your own code (1 if you do, 0 if you don't)
++#define wxUSE_EXCEPTIONS    1
++
++// Set wxUSE_EXTENDED_RTTI to 1 to use extended RTTI
++//
++// Default is 0
++//
++// Recommended setting: 0 (this is still work in progress...)
++#define wxUSE_EXTENDED_RTTI 0
++
++// Support for message/error logging. This includes wxLogXXX() functions and
++// wxLog and derived classes. Don't set this to 0 unless you really know what
++// you are doing.
++//
++// Default is 1
++//
++// Recommended setting: 1 (always)
++#define wxUSE_LOG 1
++
++// Recommended setting: 1
++#define wxUSE_LOGWINDOW 1
++
++// Recommended setting: 1
++#define wxUSE_LOGGUI 1
++
++// Recommended setting: 1
++#define wxUSE_LOG_DIALOG 1
++
++// Support for command line parsing using wxCmdLineParser class.
++//
++// Default is 1
++//
++// Recommended setting: 1 (can be set to 0 if you don't use the cmd line)
++#define wxUSE_CMDLINE_PARSER 1
++
++// Support for multithreaded applications: if 1, compile in thread classes
++// (thread.h) and make the library a bit more thread safe. Although thread
++// support is quite stable by now, you may still consider recompiling the
++// library without it if you have no use for it - this will result in a
++// somewhat smaller and faster operation.
++//
++// Notice that if wxNO_THREADS is defined, wxUSE_THREADS is automatically reset
++// to 0 in wx/chkconf.h, so, for example, if you set USE_THREADS to 0 in
++// build/msw/config.* file this value will have no effect.
++//
++// Default is 1
++//
++// Recommended setting: 0 unless you do plan to develop MT applications
++#define wxUSE_THREADS 1
++
++// If enabled, compiles wxWidgets streams classes
++//
++// wx stream classes are used for image IO, process IO redirection, network
++// protocols implementation and much more and so disabling this results in a
++// lot of other functionality being lost.
++//
++// Default is 1
++//
++// Recommended setting: 1 as setting it to 0 disables many other things
++#define wxUSE_STREAMS       1
++
++// Support for positional parameters (e.g. %1$d, %2$s ...) in wxVsnprintf.
++// Note that if the system's implementation does not support positional
++// parameters, setting this to 1 forces the use of the wxWidgets implementation
++// of wxVsnprintf. The standard vsnprintf() supports positional parameters on
++// many Unix systems but usually doesn't under Windows.
++//
++// Positional parameters are very useful when translating a program since using
++// them in formatting strings allow translators to correctly reorder the
++// translated sentences.
++//
++// Default is 1
++//
++// Recommended setting: 1 if you want to support multiple languages
++#define wxUSE_PRINTF_POS_PARAMS      1
++
++// Enable the use of compiler-specific thread local storage keyword, if any.
++// This is used for wxTLS_XXX() macros implementation and normally should use
++// the compiler-provided support as it's simpler and more efficient, but is
++// disabled under Windows in wx/msw/chkconf.h as it can't be used if wxWidgets
++// is used in a dynamically loaded Win32 DLL (i.e. using LoadLibrary()) under
++// XP as this triggers a bug in compiler TLS support that results in crashes
++// when any TLS variables are used.
++//
++// If you're absolutely sure that your build of wxWidgets is never going to be
++// used in such situation, either because it's not going to be linked from any
++// kind of plugin or because you only target Vista or later systems, you can
++// set this to 2 to force the use of compiler TLS even under MSW.
++//
++// Default is 1 meaning that compiler TLS is used only if it's 100% safe.
++//
++// Recommended setting: 2 if you want to have maximal performance and don't
++// care about the scenario described above.
++#define wxUSE_COMPILER_TLS 1
++
++// ----------------------------------------------------------------------------
++// Interoperability with the standard library.
++// ----------------------------------------------------------------------------
++
++// Set wxUSE_STL to 1 to enable maximal interoperability with the standard
++// library, even at the cost of backwards compatibility.
++//
++// Default is 0
++//
++// Recommended setting: 0 as the options below already provide a relatively
++// good level of interoperability and changing this option arguably isn't worth
++// diverging from the official builds of the library.
++#define wxUSE_STL 0
++
++// This is not a real option but is used as the default value for
++// wxUSE_STD_IOSTREAM, wxUSE_STD_STRING and wxUSE_STD_CONTAINERS.
++//
++// Currently the Digital Mars and Watcom compilers come without standard C++
++// library headers by default, wxUSE_STD_STRING can be set to 1 if you do have
++// them (e.g. from STLPort).
++//
++// VC++ 5.0 does include standard C++ library headers, however they produce
++// many warnings that can't be turned off when compiled at warning level 4.
++#if defined(__DMC__) || defined(__WATCOMC__) \
++        || (defined(_MSC_VER) && _MSC_VER < 1200)
++    #define wxUSE_STD_DEFAULT  0
++#else
++    #define wxUSE_STD_DEFAULT  1
++#endif
++
++// Use standard C++ containers to implement wxVector<>, wxStack<>, wxDList<>
++// and wxHashXXX<> classes. If disabled, wxWidgets own (mostly compatible but
++// usually more limited) implementations are used which allows to avoid the
++// dependency on the C++ run-time library.
++//
++// Notice that the compilers mentioned in wxUSE_STD_DEFAULT comment above don't
++// support using standard containers and that VC6 needs non-default options for
++// such build to avoid getting "fatal error C1076: compiler limit : internal
++// heap limit reached; use /Zm to specify a higher limit" in its own standard
++// headers, so you need to ensure you do increase the heap size before enabling
++// this option for this compiler.
++//
++// Default is 0 for compatibility reasons.
++//
++// Recommended setting: 1 unless compatibility with the official wxWidgets
++// build and/or the existing code is a concern.
++#define wxUSE_STD_CONTAINERS 0
++
++// Use standard C++ streams if 1 instead of wx streams in some places. If
++// disabled, wx streams are used everywhere and wxWidgets doesn't depend on the
++// standard streams library.
++//
++// Notice that enabling this does not replace wx streams with std streams
++// everywhere, in a lot of places wx streams are used no matter what.
++//
++// Default is 1 if compiler supports it.
++//
++// Recommended setting: 1 if you use the standard streams anyhow and so
++//                      dependency on the standard streams library is not a
++//                      problem
++#define wxUSE_STD_IOSTREAM  wxUSE_STD_DEFAULT
++
++// Enable minimal interoperability with the standard C++ string class if 1.
++// "Minimal" means that wxString can be constructed from std::string or
++// std::wstring but can't be implicitly converted to them. You need to enable
++// the option below for the latter.
++//
++// Default is 1 for most compilers.
++//
++// Recommended setting: 1 unless you want to ensure your program doesn't use
++//                      the standard C++ library at all.
++#define wxUSE_STD_STRING  wxUSE_STD_DEFAULT
++
++// Make wxString as much interchangeable with std::[w]string as possible, in
++// particular allow implicit conversion of wxString to either of these classes.
++// This comes at a price (or a benefit, depending on your point of view) of not
++// allowing implicit conversion to "const char *" and "const wchar_t *".
++//
++// Because a lot of existing code relies on these conversions, this option is
++// disabled by default but can be enabled for your build if you don't care
++// about compatibility.
++//
++// Default is 0 if wxUSE_STL has its default value or 1 if it is enabled.
++//
++// Recommended setting: 0 to remain compatible with the official builds of
++// wxWidgets.
++#define wxUSE_STD_STRING_CONV_IN_WXSTRING wxUSE_STL
++
++// VC++ 4.2 and above allows <iostream> and <iostream.h> but you can't mix
++// them. Set this option to 1 to use <iostream.h>, 0 to use <iostream>.
++//
++// Note that newer compilers (including VC++ 7.1 and later) don't support
++// wxUSE_IOSTREAMH == 1 and so <iostream> will be used anyhow.
++//
++// Default is 0.
++//
++// Recommended setting: 0, only set to 1 if you use a really old compiler
++#define wxUSE_IOSTREAMH     0
++
++
++// ----------------------------------------------------------------------------
++// non GUI features selection
++// ----------------------------------------------------------------------------
++
++// Set wxUSE_LONGLONG to 1 to compile the wxLongLong class. This is a 64 bit
++// integer which is implemented in terms of native 64 bit integers if any or
++// uses emulation otherwise.
++//
++// This class is required by wxDateTime and so you should enable it if you want
++// to use wxDateTime. For most modern platforms, it will use the native 64 bit
++// integers in which case (almost) all of its functions are inline and it
++// almost does not take any space, so there should be no reason to switch it
++// off.
++//
++// Recommended setting: 1
++#define wxUSE_LONGLONG      1
++
++// Set wxUSE_BASE64 to 1, to compile in Base64 support. This is required for
++// storing binary data in wxConfig on most platforms.
++//
++// Default is 1.
++//
++// Recommended setting: 1 (but can be safely disabled if you don't use it)
++#define wxUSE_BASE64        1
++
++// Set this to 1 to be able to use wxEventLoop even in console applications
++// (i.e. using base library only, without GUI). This is mostly useful for
++// processing socket events but is also necessary to use timers in console
++// applications
++//
++// Default is 1.
++//
++// Recommended setting: 1 (but can be safely disabled if you don't use it)
++#define wxUSE_CONSOLE_EVENTLOOP 1
++
++// Set wxUSE_(F)FILE to 1 to compile wx(F)File classes. wxFile uses low level
++// POSIX functions for file access, wxFFile uses ANSI C stdio.h functions.
++//
++// Default is 1
++//
++// Recommended setting: 1 (wxFile is highly recommended as it is required by
++// i18n code, wxFileConfig and others)
++#define wxUSE_FILE          1
++#define wxUSE_FFILE         1
++
++// Use wxFSVolume class providing access to the configured/active mount points
++//
++// Default is 1
++//
++// Recommended setting: 1 (but may be safely disabled if you don't use it)
++#define wxUSE_FSVOLUME      1
++
++// Use wxStandardPaths class which allows to retrieve some standard locations
++// in the file system
++//
++// Default is 1
++//
++// Recommended setting: 1 (may be disabled to save space, but not much)
++#define wxUSE_STDPATHS      1
++
++// use wxTextBuffer class: required by wxTextFile
++#define wxUSE_TEXTBUFFER    1
++
++// use wxTextFile class: requires wxFile and wxTextBuffer, required by
++// wxFileConfig
++#define wxUSE_TEXTFILE      1
++
++// i18n support: _() macro, wxLocale class. Requires wxTextFile.
++#define wxUSE_INTL          1
++
++// Provide wxFoo_l() functions similar to standard foo() functions but taking
++// an extra locale parameter.
++//
++// Notice that this is fully implemented only for the systems providing POSIX
++// xlocale support or Microsoft Visual C++ >= 8 (which provides proprietary
++// almost-equivalent of xlocale functions), otherwise wxFoo_l() functions will
++// only work for the current user locale and "C" locale. You can use
++// wxHAS_XLOCALE_SUPPORT to test whether the full support is available.
++//
++// Default is 1
++//
++// Recommended setting: 1 but may be disabled if you are writing programs
++// running only in C locale anyhow
++#define wxUSE_XLOCALE       1
++
++// Set wxUSE_DATETIME to 1 to compile the wxDateTime and related classes which
++// allow to manipulate dates, times and time intervals. wxDateTime replaces the
++// old wxTime and wxDate classes which are still provided for backwards
++// compatibility (and implemented in terms of wxDateTime).
++//
++// Note that this class is relatively new and is still officially in alpha
++// stage because some features are not yet (fully) implemented. It is already
++// quite useful though and should only be disabled if you are aiming at
++// absolutely minimal version of the library.
++//
++// Requires: wxUSE_LONGLONG
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_DATETIME      1
++
++// Set wxUSE_TIMER to 1 to compile wxTimer class
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_TIMER         1
++
++// Use wxStopWatch clas.
++//
++// Default is 1
++//
++// Recommended setting: 1 (needed by wxSocket)
++#define wxUSE_STOPWATCH     1
++
++// Set wxUSE_FSWATCHER to 1 if you want to enable wxFileSystemWatcher
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_FSWATCHER     1
++
++// Setting wxUSE_CONFIG to 1 enables the use of wxConfig and related classes
++// which allow the application to store its settings in the persistent
++// storage. Setting this to 1 will also enable on-demand creation of the
++// global config object in wxApp.
++//
++// See also wxUSE_CONFIG_NATIVE below.
++//
++// Recommended setting: 1
++#define wxUSE_CONFIG        1
++
++// If wxUSE_CONFIG is 1, you may choose to use either the native config
++// classes under Windows (using .INI files under Win16 and the registry under
++// Win32) or the portable text file format used by the config classes under
++// Unix.
++//
++// Default is 1 to use native classes. Note that you may still use
++// wxFileConfig even if you set this to 1 - just the config object created by
++// default for the applications needs will be a wxRegConfig or wxIniConfig and
++// not wxFileConfig.
++//
++// Recommended setting: 1
++#define wxUSE_CONFIG_NATIVE   1
++
++// If wxUSE_DIALUP_MANAGER is 1, compile in wxDialUpManager class which allows
++// to connect/disconnect from the network and be notified whenever the dial-up
++// network connection is established/terminated. Requires wxUSE_DYNAMIC_LOADER.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_DIALUP_MANAGER   1
++
++// Compile in classes for run-time DLL loading and function calling.
++// Required by wxUSE_DIALUP_MANAGER.
++//
++// This setting is for Win32 only
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_DYNLIB_CLASS    1
++
++// experimental, don't use for now
++#define wxUSE_DYNAMIC_LOADER  1
++
++// Set to 1 to use socket classes
++#define wxUSE_SOCKETS       1
++
++// Set to 1 to use ipv6 socket classes (requires wxUSE_SOCKETS)
++//
++// Notice that currently setting this option under Windows will result in
++// programs which can only run on recent OS versions (with ws2_32.dll
++// installed) which is why it is disabled by default.
++//
++// Default is 1.
++//
++// Recommended setting: 1 if you need IPv6 support
++#define wxUSE_IPV6          0
++
++// Set to 1 to enable virtual file systems (required by wxHTML)
++#define wxUSE_FILESYSTEM    1
++
++// Set to 1 to enable virtual ZIP filesystem (requires wxUSE_FILESYSTEM)
++#define wxUSE_FS_ZIP        1
++
++// Set to 1 to enable virtual archive filesystem (requires wxUSE_FILESYSTEM)
++#define wxUSE_FS_ARCHIVE    1
++
++// Set to 1 to enable virtual Internet filesystem (requires wxUSE_FILESYSTEM)
++#define wxUSE_FS_INET       1
++
++// wxArchive classes for accessing archives such as zip and tar
++#define wxUSE_ARCHIVE_STREAMS     1
++
++// Set to 1 to compile wxZipInput/OutputStream classes.
++#define wxUSE_ZIPSTREAM     1
++
++// Set to 1 to compile wxTarInput/OutputStream classes.
++#define wxUSE_TARSTREAM     1
++
++// Set to 1 to compile wxZlibInput/OutputStream classes. Also required by
++// wxUSE_LIBPNG
++#define wxUSE_ZLIB          1
++
++// If enabled, the code written by Apple will be used to write, in a portable
++// way, float on the disk. See extended.c for the license which is different
++// from wxWidgets one.
++//
++// Default is 1.
++//
++// Recommended setting: 1 unless you don't like the license terms (unlikely)
++#define wxUSE_APPLE_IEEE          1
++
++// Joystick support class
++#define wxUSE_JOYSTICK            1
++
++// wxFontEnumerator class
++#define wxUSE_FONTENUM 1
++
++// wxFontMapper class
++#define wxUSE_FONTMAP 1
++
++// wxMimeTypesManager class
++#define wxUSE_MIMETYPE 1
++
++// wxProtocol and related classes: if you want to use either of wxFTP, wxHTTP
++// or wxURL you need to set this to 1.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_PROTOCOL 1
++
++// The settings for the individual URL schemes
++#define wxUSE_PROTOCOL_FILE 1
++#define wxUSE_PROTOCOL_FTP 1
++#define wxUSE_PROTOCOL_HTTP 1
++
++// Define this to use wxURL class.
++#define wxUSE_URL 1
++
++// Define this to use native platform url and protocol support.
++// Currently valid only for MS-Windows.
++// Note: if you set this to 1, you can open ftp/http/gopher sites
++// and obtain a valid input stream for these sites
++// even when you set wxUSE_PROTOCOL_FTP/HTTP to 0.
++// Doing so reduces the code size.
++//
++// This code is experimental and subject to change.
++#define wxUSE_URL_NATIVE 0
++
++// Support for wxVariant class used in several places throughout the library,
++// notably in wxDataViewCtrl API.
++//
++// Default is 1.
++//
++// Recommended setting: 1 unless you want to reduce the library size as much as
++// possible in which case setting this to 0 can gain up to 100KB.
++#define wxUSE_VARIANT 1
++
++// Support for wxAny class, the successor for wxVariant.
++//
++// Default is 1.
++//
++// Recommended setting: 1 unless you want to reduce the library size by a small amount,
++// or your compiler cannot for some reason cope with complexity of templates used.
++#define wxUSE_ANY 1
++
++// Support for regular expression matching via wxRegEx class: enable this to
++// use POSIX regular expressions in your code. You need to compile regex
++// library from src/regex to use it under Windows.
++//
++// Default is 0
++//
++// Recommended setting: 1 if your compiler supports it, if it doesn't please
++// contribute us a makefile for src/regex for it
++#define wxUSE_REGEX       1
++
++// wxSystemOptions class
++#define wxUSE_SYSTEM_OPTIONS 1
++
++// wxSound class
++#define wxUSE_SOUND      1
++
++// Use wxMediaCtrl
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_MEDIACTRL     1
++
++// Use wxWidget's XRC XML-based resource system.  Recommended.
++//
++// Default is 1
++//
++// Recommended setting: 1 (requires wxUSE_XML)
++#define wxUSE_XRC       1
++
++// XML parsing classes. Note that their API will change in the future, so
++// using wxXmlDocument and wxXmlNode in your app is not recommended.
++//
++// Default is the same as wxUSE_XRC, i.e. 1 by default.
++//
++// Recommended setting: 1 (required by XRC)
++#define wxUSE_XML       wxUSE_XRC
++
++// Use wxWidget's AUI docking system
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_AUI       1
++
++// Use wxWidget's Ribbon classes for interfaces
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_RIBBON    1
++
++// Use wxPropertyGrid.
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_PROPGRID  1
++
++// Use wxStyledTextCtrl, a wxWidgets implementation of Scintilla.
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_STC 1
++
++// Use wxWidget's web viewing classes
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_WEBVIEW 1
++
++// Use the IE wxWebView backend
++//
++// Default is 1 on MSW
++//
++// Recommended setting: 1
++#ifdef __WXMSW__
++#define wxUSE_WEBVIEW_IE 1
++#else
++#define wxUSE_WEBVIEW_IE 0
++#endif
++
++// Use the WebKit wxWebView backend
++//
++// Default is 1 on GTK and OSX
++//
++// Recommended setting: 1
++#if defined(__WXGTK__) || defined(__WXOSX__)
++#define wxUSE_WEBVIEW_WEBKIT 1
++#else
++#define wxUSE_WEBVIEW_WEBKIT 0
++#endif
++
++// Enable the new wxGraphicsPath and wxGraphicsContext classes for an advanced
++// 2D drawing API.  (Still somewhat experimental)
++//
++// Please note that on Windows gdiplus.dll is loaded dynamically which means
++// that nothing special needs to be done as long as you don't use
++// wxGraphicsContext at all or only use it on XP and later systems but you
++// still do need to distribute it yourself for an application using
++// wxGraphicsContext to be runnable on pre-XP systems.
++//
++// Default is 1 except if you're using a non-Microsoft compiler under Windows
++// as only MSVC7+ is known to ship with gdiplus.h. For other compilers (e.g.
++// mingw32) you may need to install the headers (and just the headers)
++// yourself. If you do, change the setting below manually.
++//
++// Recommended setting: 1 if supported by the compilation environment
++
++// notice that we can't use wxCHECK_VISUALC_VERSION() here as this file is
++// included from wx/platform.h before wxCHECK_VISUALC_VERSION() is defined
++#ifdef _MSC_VER
++#   if _MSC_VER >= 1310
++        // MSVC7.1+ comes with new enough Platform SDK, enable
++        // wxGraphicsContext support for it
++#       define wxUSE_GRAPHICS_CONTEXT 1
++#   else
++        // MSVC 6 didn't include GDI+ headers so disable by default, enable it
++        // here if you use MSVC 6 with a newer SDK
++#       define wxUSE_GRAPHICS_CONTEXT 0
++#   endif
++#else
++    // Disable support for other Windows compilers, enable it if your compiler
++    // comes with new enough SDK or you installed the headers manually.
++    //
++    // Notice that this will be set by configure under non-Windows platforms
++    // anyhow so the value there is not important.
++#   define wxUSE_GRAPHICS_CONTEXT 0
++#endif
++
++// Enable wxGraphicsContext implementation using Cairo library.
++//
++// This is not needed under Windows and detected automatically by configure
++// under other systems, however you may set this to 1 manually if you installed
++// Cairo under Windows yourself and prefer to use it instead the native GDI+
++// implementation.
++//
++// Default is 0
++//
++// Recommended setting: 0
++#define wxUSE_CAIRO 0
++
++
++// ----------------------------------------------------------------------------
++// Individual GUI controls
++// ----------------------------------------------------------------------------
++
++// You must set wxUSE_CONTROLS to 1 if you are using any controls at all
++// (without it, wxControl class is not compiled)
++//
++// Default is 1
++//
++// Recommended setting: 1 (don't change except for very special programs)
++#define wxUSE_CONTROLS     1
++
++// Support markup in control labels, i.e. provide wxControl::SetLabelMarkup().
++// Currently markup is supported only by a few controls and only some ports but
++// their number will increase with time.
++//
++// Default is 1
++//
++// Recommended setting: 1 (may be set to 0 if you want to save on code size)
++#define wxUSE_MARKUP       1
++
++// wxPopupWindow class is a top level transient window. It is currently used
++// to implement wxTipWindow
++//
++// Default is 1
++//
++// Recommended setting: 1 (may be set to 0 if you don't wxUSE_TIPWINDOW)
++#define wxUSE_POPUPWIN     1
++
++// wxTipWindow allows to implement the custom tooltips, it is used by the
++// context help classes. Requires wxUSE_POPUPWIN.
++//
++// Default is 1
++//
++// Recommended setting: 1 (may be set to 0)
++#define wxUSE_TIPWINDOW    1
++
++// Each of the settings below corresponds to one wxWidgets control. They are
++// all switched on by default but may be disabled if you are sure that your
++// program (including any standard dialogs it can show!) doesn't need them and
++// if you desperately want to save some space. If you use any of these you must
++// set wxUSE_CONTROLS as well.
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_ANIMATIONCTRL 1   // wxAnimationCtrl
++#define wxUSE_BANNERWINDOW  1   // wxBannerWindow
++#define wxUSE_BUTTON        1   // wxButton
++#define wxUSE_BMPBUTTON     1   // wxBitmapButton
++#define wxUSE_CALENDARCTRL  1   // wxCalendarCtrl
++#define wxUSE_CHECKBOX      1   // wxCheckBox
++#define wxUSE_CHECKLISTBOX  1   // wxCheckListBox (requires wxUSE_OWNER_DRAWN)
++#define wxUSE_CHOICE        1   // wxChoice
++#define wxUSE_COLLPANE      1   // wxCollapsiblePane
++#define wxUSE_COLOURPICKERCTRL 1    // wxColourPickerCtrl
++#define wxUSE_COMBOBOX      1   // wxComboBox
++#define wxUSE_COMMANDLINKBUTTON 1   // wxCommandLinkButton
++#define wxUSE_DATAVIEWCTRL  1   // wxDataViewCtrl
++#define wxUSE_DATEPICKCTRL  1   // wxDatePickerCtrl
++#define wxUSE_DIRPICKERCTRL 1   // wxDirPickerCtrl
++#define wxUSE_EDITABLELISTBOX 1 // wxEditableListBox
++#define wxUSE_FILECTRL      1   // wxFileCtrl
++#define wxUSE_FILEPICKERCTRL 1  // wxFilePickerCtrl
++#define wxUSE_FONTPICKERCTRL 1  // wxFontPickerCtrl
++#define wxUSE_GAUGE         1   // wxGauge
++#define wxUSE_HEADERCTRL    1   // wxHeaderCtrl
++#define wxUSE_HYPERLINKCTRL 1   // wxHyperlinkCtrl
++#define wxUSE_LISTBOX       1   // wxListBox
++#define wxUSE_LISTCTRL      1   // wxListCtrl
++#define wxUSE_RADIOBOX      1   // wxRadioBox
++#define wxUSE_RADIOBTN      1   // wxRadioButton
++#define wxUSE_RICHMSGDLG    1   // wxRichMessageDialog
++#define wxUSE_SCROLLBAR     1   // wxScrollBar
++#define wxUSE_SEARCHCTRL    1   // wxSearchCtrl
++#define wxUSE_SLIDER        1   // wxSlider
++#define wxUSE_SPINBTN       1   // wxSpinButton
++#define wxUSE_SPINCTRL      1   // wxSpinCtrl
++#define wxUSE_STATBOX       1   // wxStaticBox
++#define wxUSE_STATLINE      1   // wxStaticLine
++#define wxUSE_STATTEXT      1   // wxStaticText
++#define wxUSE_STATBMP       1   // wxStaticBitmap
++#define wxUSE_TEXTCTRL      1   // wxTextCtrl
++#define wxUSE_TIMEPICKCTRL  1   // wxTimePickerCtrl
++#define wxUSE_TOGGLEBTN     1   // requires wxButton
++#define wxUSE_TREECTRL      1   // wxTreeCtrl
++#define wxUSE_TREELISTCTRL  1   // wxTreeListCtrl
++
++// Use a status bar class? Depending on the value of wxUSE_NATIVE_STATUSBAR
++// below either wxStatusBar95 or a generic wxStatusBar will be used.
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_STATUSBAR    1
++
++// Two status bar implementations are available under Win32: the generic one
++// or the wrapper around native control. For native look and feel the native
++// version should be used.
++//
++// Default is 1 for the platforms where native status bar is supported.
++//
++// Recommended setting: 1 (there is no advantage in using the generic one)
++#define wxUSE_NATIVE_STATUSBAR        1
++
++// wxToolBar related settings: if wxUSE_TOOLBAR is 0, don't compile any toolbar
++// classes at all. Otherwise, use the native toolbar class unless
++// wxUSE_TOOLBAR_NATIVE is 0.
++//
++// Default is 1 for all settings.
++//
++// Recommended setting: 1 for wxUSE_TOOLBAR and wxUSE_TOOLBAR_NATIVE.
++#define wxUSE_TOOLBAR 1
++#define wxUSE_TOOLBAR_NATIVE 1
++
++// wxNotebook is a control with several "tabs" located on one of its sides. It
++// may be used to logically organise the data presented to the user instead of
++// putting everything in one huge dialog. It replaces wxTabControl and related
++// classes of wxWin 1.6x.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_NOTEBOOK 1
++
++// wxListbook control is similar to wxNotebook but uses wxListCtrl instead of
++// the tabs
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_LISTBOOK 1
++
++// wxChoicebook control is similar to wxNotebook but uses wxChoice instead of
++// the tabs
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_CHOICEBOOK 1
++
++// wxTreebook control is similar to wxNotebook but uses wxTreeCtrl instead of
++// the tabs
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_TREEBOOK 1
++
++// wxToolbook control is similar to wxNotebook but uses wxToolBar instead of
++// tabs
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_TOOLBOOK 1
++
++// wxTaskBarIcon is a small notification icon shown in the system toolbar or
++// dock.
++//
++// Default is 1.
++//
++// Recommended setting: 1 (but can be set to 0 if you don't need it)
++#define wxUSE_TASKBARICON 1
++
++// wxGrid class
++//
++// Default is 1, set to 0 to cut down compilation time and binaries size if you
++// don't use it.
++//
++// Recommended setting: 1
++//
++#define wxUSE_GRID         1
++
++// wxMiniFrame class: a frame with narrow title bar
++//
++// Default is 1.
++//
++// Recommended setting: 1 (it doesn't cost almost anything)
++#define wxUSE_MINIFRAME 1
++
++// wxComboCtrl and related classes: combobox with custom popup window and
++// not necessarily a listbox.
++//
++// Default is 1.
++//
++// Recommended setting: 1 but can be safely set to 0 except for wxUniv where it
++//                      it used by wxComboBox
++#define wxUSE_COMBOCTRL 1
++
++// wxOwnerDrawnComboBox is a custom combobox allowing to paint the combobox
++// items.
++//
++// Default is 1.
++//
++// Recommended setting: 1 but can be safely set to 0, except where it is
++//                      needed as a base class for generic wxBitmapComboBox.
++#define wxUSE_ODCOMBOBOX 1
++
++// wxBitmapComboBox is a combobox that can have images in front of text items.
++//
++// Default is 1.
++//
++// Recommended setting: 1 but can be safely set to 0
++#define wxUSE_BITMAPCOMBOBOX 1
++
++// wxRearrangeCtrl is a wxCheckListBox with two buttons allowing to move items
++// up and down in it. It is also used as part of wxRearrangeDialog.
++//
++// Default is 1.
++//
++// Recommended setting: 1 but can be safely set to 0 (currently used only by
++// wxHeaderCtrl)
++#define wxUSE_REARRANGECTRL 1
++
++// ----------------------------------------------------------------------------
++// Miscellaneous GUI stuff
++// ----------------------------------------------------------------------------
++
++// wxAcceleratorTable/Entry classes and support for them in wxMenu(Bar)
++#define wxUSE_ACCEL 1
++
++// Use the standard art provider. The icons returned by this provider are
++// embedded into the library as XPMs so disabling it reduces the library size
++// somewhat but this should only be done if you use your own custom art
++// provider returning the icons or never use any icons not provided by the
++// native art provider (which might not be implemented at all for some
++// platforms) or by the Tango icons provider (if it's not itself disabled
++// below).
++//
++// Default is 1.
++//
++// Recommended setting: 1 unless you use your own custom art provider.
++#define wxUSE_ARTPROVIDER_STD 1
++
++// Use art provider providing Tango icons: this art provider has higher quality
++// icons than the default ones using smaller size XPM icons without
++// transparency but the embedded PNG icons add to the library size.
++//
++// Default is 1 under non-GTK ports. Under wxGTK the native art provider using
++// the GTK+ stock icons replaces it so it is normally not necessary.
++//
++// Recommended setting: 1 but can be turned off to reduce the library size.
++#define wxUSE_ARTPROVIDER_TANGO 1
++
++// Hotkey support (currently Windows only)
++#define wxUSE_HOTKEY 1
++
++// Use wxCaret: a class implementing a "cursor" in a text control (called caret
++// under Windows).
++//
++// Default is 1.
++//
++// Recommended setting: 1 (can be safely set to 0, not used by the library)
++#define wxUSE_CARET         1
++
++// Use wxDisplay class: it allows enumerating all displays on a system and
++// their geometries as well as finding the display on which the given point or
++// window lies.
++//
++// Default is 1.
++//
++// Recommended setting: 1 if you need it, can be safely set to 0 otherwise
++#define wxUSE_DISPLAY       1
++
++// Miscellaneous geometry code: needed for Canvas library
++#define wxUSE_GEOMETRY            1
++
++// Use wxImageList. This class is needed by wxNotebook, wxTreeCtrl and
++// wxListCtrl.
++//
++// Default is 1.
++//
++// Recommended setting: 1 (set it to 0 if you don't use any of the controls
++// enumerated above, then this class is mostly useless too)
++#define wxUSE_IMAGLIST      1
++
++// Use wxInfoBar class.
++//
++// Default is 1.
++//
++// Recommended setting: 1 (but can be disabled without problems as nothing
++// depends on it)
++#define wxUSE_INFOBAR       1
++
++// Use wxMenu, wxMenuBar, wxMenuItem.
++//
++// Default is 1.
++//
++// Recommended setting: 1 (can't be disabled under MSW)
++#define wxUSE_MENUS         1
++
++// Use wxNotificationMessage.
++//
++// wxNotificationMessage allows to show non-intrusive messages to the user
++// using balloons, banners, popups or whatever is the appropriate method for
++// the current platform.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_NOTIFICATION_MESSAGE 1
++
++// wxPreferencesEditor provides a common API for different ways of presenting
++// the standard "Preferences" or "Properties" dialog under different platforms
++// (e.g. some use modal dialogs, some use modeless ones; some apply the changes
++// immediately while others require an explicit "Apply" button).
++//
++// Default is 1.
++//
++// Recommended setting: 1 (but can be safely disabled if you don't use it)
++#define wxUSE_PREFERENCES_EDITOR 1
++
++// wxRichToolTip is a customizable tooltip class which has more functionality
++// than the stock (but native, unlike this class) wxToolTip.
++//
++// Default is 1.
++//
++// Recommended setting: 1 (but can be safely set to 0 if you don't need it)
++#define wxUSE_RICHTOOLTIP 1
++
++// Use wxSashWindow class.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_SASH          1
++
++// Use wxSplitterWindow class.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_SPLITTER      1
++
++// Use wxToolTip and wxWindow::Set/GetToolTip() methods.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_TOOLTIPS      1
++
++// wxValidator class and related methods
++#define wxUSE_VALIDATORS 1
++
++// Use reference counted ID management: this means that wxWidgets will track
++// the automatically allocated ids (those used when you use wxID_ANY when
++// creating a window, menu or toolbar item &c) instead of just supposing that
++// the program never runs out of them. This is mostly useful only under wxMSW
++// where the total ids range is limited to SHRT_MIN..SHRT_MAX and where
++// long-running programs can run into problems with ids reuse without this. On
++// the other platforms, where the ids have the full int range, this shouldn't
++// be necessary.
++#ifdef __WXMSW__
++#define wxUSE_AUTOID_MANAGEMENT 1
++#else
++#define wxUSE_AUTOID_MANAGEMENT 0
++#endif
++
++// ----------------------------------------------------------------------------
++// common dialogs
++// ----------------------------------------------------------------------------
++
++// On rare occasions (e.g. using DJGPP) may want to omit common dialogs (e.g.
++// file selector, printer dialog). Switching this off also switches off the
++// printing architecture and interactive wxPrinterDC.
++//
++// Default is 1
++//
++// Recommended setting: 1 (unless it really doesn't work)
++#define wxUSE_COMMON_DIALOGS 1
++
++// wxBusyInfo displays window with message when app is busy. Works in same way
++// as wxBusyCursor
++#define wxUSE_BUSYINFO      1
++
++// Use single/multiple choice dialogs.
++//
++// Default is 1
++//
++// Recommended setting: 1 (used in the library itself)
++#define wxUSE_CHOICEDLG     1
++
++// Use colour picker dialog
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_COLOURDLG     1
++
++// wxDirDlg class for getting a directory name from user
++#define wxUSE_DIRDLG 1
++
++// TODO: setting to choose the generic or native one
++
++// Use file open/save dialogs.
++//
++// Default is 1
++//
++// Recommended setting: 1 (used in many places in the library itself)
++#define wxUSE_FILEDLG       1
++
++// Use find/replace dialogs.
++//
++// Default is 1
++//
++// Recommended setting: 1 (but may be safely set to 0)
++#define wxUSE_FINDREPLDLG       1
++
++// Use font picker dialog
++//
++// Default is 1
++//
++// Recommended setting: 1 (used in the library itself)
++#define wxUSE_FONTDLG       1
++
++// Use wxMessageDialog and wxMessageBox.
++//
++// Default is 1
++//
++// Recommended setting: 1 (used in the library itself)
++#define wxUSE_MSGDLG        1
++
++// progress dialog class for lengthy operations
++#define wxUSE_PROGRESSDLG 1
++
++// support for startup tips (wxShowTip &c)
++#define wxUSE_STARTUP_TIPS 1
++
++// text entry dialog and wxGetTextFromUser function
++#define wxUSE_TEXTDLG 1
++
++// number entry dialog
++#define wxUSE_NUMBERDLG 1
++
++// splash screen class
++#define wxUSE_SPLASH 1
++
++// wizards
++#define wxUSE_WIZARDDLG 1
++
++// Compile in wxAboutBox() function showing the standard "About" dialog.
++//
++// Default is 1
++//
++// Recommended setting: 1 but can be set to 0 to save some space if you don't
++//                      use this function
++#define wxUSE_ABOUTDLG 1
++
++// wxFileHistory class
++//
++// Default is 1
++//
++// Recommended setting: 1
++#define wxUSE_FILE_HISTORY 1
++
++// ----------------------------------------------------------------------------
++// Metafiles support
++// ----------------------------------------------------------------------------
++
++// Windows supports the graphics format known as metafile which is, though not
++// portable, is widely used under Windows and so is supported by wxWin (under
++// Windows only, of course). Win16 (Win3.1) used the so-called "Window
++// MetaFiles" or WMFs which were replaced with "Enhanced MetaFiles" or EMFs in
++// Win32 (Win9x, NT, 2000). Both of these are supported in wxWin and, by
++// default, WMFs will be used under Win16 and EMFs under Win32. This may be
++// changed by setting wxUSE_WIN_METAFILES_ALWAYS to 1 and/or setting
++// wxUSE_ENH_METAFILE to 0. You may also set wxUSE_METAFILE to 0 to not compile
++// in any metafile related classes at all.
++//
++// Default is 1 for wxUSE_ENH_METAFILE and 0 for wxUSE_WIN_METAFILES_ALWAYS.
++//
++// Recommended setting: default or 0 for everything for portable programs.
++#define wxUSE_METAFILE              1
++#define wxUSE_ENH_METAFILE          1
++#define wxUSE_WIN_METAFILES_ALWAYS  0
++
++// ----------------------------------------------------------------------------
++// Big GUI components
++// ----------------------------------------------------------------------------
++
++// Set to 0 to disable MDI support.
++//
++// Requires wxUSE_NOTEBOOK under platforms other than MSW.
++//
++// Default is 1.
++//
++// Recommended setting: 1, can be safely set to 0.
++#define wxUSE_MDI 1
++
++// Set to 0 to disable document/view architecture
++#define wxUSE_DOC_VIEW_ARCHITECTURE 1
++
++// Set to 0 to disable MDI document/view architecture
++//
++// Requires wxUSE_MDI && wxUSE_DOC_VIEW_ARCHITECTURE
++#define wxUSE_MDI_ARCHITECTURE    1
++
++// Set to 0 to disable print/preview architecture code
++#define wxUSE_PRINTING_ARCHITECTURE  1
++
++// wxHTML sublibrary allows to display HTML in wxWindow programs and much,
++// much more.
++//
++// Default is 1.
++//
++// Recommended setting: 1 (wxHTML is great!), set to 0 if you want compile a
++// smaller library.
++#define wxUSE_HTML          1
++
++// Setting wxUSE_GLCANVAS to 1 enables OpenGL support. You need to have OpenGL
++// headers and libraries to be able to compile the library with wxUSE_GLCANVAS
++// set to 1 and, under Windows, also to add opengl32.lib and glu32.lib to the
++// list of libraries used to link your application (although this is done
++// implicitly for Microsoft Visual C++ users).
++//
++// Default is 1 unless the compiler is known to ship without the necessary
++// headers (Digital Mars) or the platform doesn't support OpenGL (Windows CE).
++//
++// Recommended setting: 1 if you intend to use OpenGL, can be safely set to 0
++// otherwise.
++#define wxUSE_GLCANVAS       1
++
++// wxRichTextCtrl allows editing of styled text.
++//
++// Default is 1.
++//
++// Recommended setting: 1, set to 0 if you want compile a
++// smaller library.
++#define wxUSE_RICHTEXT       1
++
++// ----------------------------------------------------------------------------
++// Data transfer
++// ----------------------------------------------------------------------------
++
++// Use wxClipboard class for clipboard copy/paste.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_CLIPBOARD     1
++
++// Use wxDataObject and related classes. Needed for clipboard and OLE drag and
++// drop
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_DATAOBJ       1
++
++// Use wxDropTarget and wxDropSource classes for drag and drop (this is
++// different from "built in" drag and drop in wxTreeCtrl which is always
++// available). Requires wxUSE_DATAOBJ.
++//
++// Default is 1.
++//
++// Recommended setting: 1
++#define wxUSE_DRAG_AND_DROP 1
++
++// Use wxAccessible for enhanced and customisable accessibility.
++// Depends on wxUSE_OLE.
++//
++// Default is 0.
++//
++// Recommended setting (at present): 0
++#define wxUSE_ACCESSIBILITY 0
++
++// ----------------------------------------------------------------------------
++// miscellaneous settings
++// ----------------------------------------------------------------------------
++
++// wxSingleInstanceChecker class allows to verify at startup if another program
++// instance is running.
++//
++// Default is 1
++//
++// Recommended setting: 1 (the class is tiny, disabling it won't save much
++// space)
++#define wxUSE_SNGLINST_CHECKER  1
++
++#define wxUSE_DRAGIMAGE 1
++
++#define wxUSE_IPC         1
++                                // 0 for no interprocess comms
++#define wxUSE_HELP        1
++                                // 0 for no help facility
++
++// Should we use MS HTML help for wxHelpController? If disabled, neither
++// wxCHMHelpController nor wxBestHelpController are available.
++//
++// Default is 1 under MSW, 0 is always used for the other platforms.
++//
++// Recommended setting: 1, only set to 0 if you have trouble compiling
++// wxCHMHelpController (could be a problem with really ancient compilers)
++#define wxUSE_MS_HTML_HELP 1
++
++
++// Use wxHTML-based help controller?
++#define wxUSE_WXHTML_HELP 1
++
++#define wxUSE_CONSTRAINTS 1
++                                // 0 for no window layout constraint system
++
++#define wxUSE_SPLINES     1
++                                // 0 for no splines
++
++#define wxUSE_MOUSEWHEEL        1
++                                // Include mouse wheel support
++
++// Compile wxUIActionSimulator class?
++#define wxUSE_UIACTIONSIMULATOR 1
++
++// ----------------------------------------------------------------------------
++// wxDC classes for various output formats
++// ----------------------------------------------------------------------------
++
++// Set to 1 for PostScript device context.
++#define wxUSE_POSTSCRIPT  0
++
++// Set to 1 to use font metric files in GetTextExtent
++#define wxUSE_AFM_FOR_POSTSCRIPT 1
++
++// Set to 1 to compile in support for wxSVGFileDC, a wxDC subclass which allows
++// to create files in SVG (Scalable Vector Graphics) format.
++#define wxUSE_SVG 1
++
++// Should wxDC provide SetTransformMatrix() and related methods?
++//
++// Default is 1 but can be set to 0 if this functionality is not used. Notice
++// that currently only wxMSW supports this so setting this to 0 doesn't change
++// much for non-MSW platforms (although it will still save a few bytes
++// probably).
++//
++// Recommended setting: 1.
++#define wxUSE_DC_TRANSFORM_MATRIX 1
++
++// ----------------------------------------------------------------------------
++// image format support
++// ----------------------------------------------------------------------------
++
++// wxImage supports many different image formats which can be configured at
++// compile-time. BMP is always supported, others are optional and can be safely
++// disabled if you don't plan to use images in such format sometimes saving
++// substantial amount of code in the final library.
++//
++// Some formats require an extra library which is included in wxWin sources
++// which is mentioned if it is the case.
++
++// Set to 1 for wxImage support (recommended).
++#define wxUSE_IMAGE         1
++
++// Set to 1 for PNG format support (requires libpng). Also requires wxUSE_ZLIB.
++#define wxUSE_LIBPNG        1
++
++// Set to 1 for JPEG format support (requires libjpeg)
++#define wxUSE_LIBJPEG       1
++
++// Set to 1 for TIFF format support (requires libtiff)
++#define wxUSE_LIBTIFF       1
++
++// Set to 1 for TGA format support (loading only)
++#define wxUSE_TGA           1
++
++// Set to 1 for GIF format support
++#define wxUSE_GIF           1
++
++// Set to 1 for PNM format support
++#define wxUSE_PNM           1
++
++// Set to 1 for PCX format support
++#define wxUSE_PCX           1
++
++// Set to 1 for IFF format support (Amiga format)
++#define wxUSE_IFF           0
++
++// Set to 1 for XPM format support
++#define wxUSE_XPM           1
++
++// Set to 1 for MS Icons and Cursors format support
++#define wxUSE_ICO_CUR       1
++
++// Set to 1 to compile in wxPalette class
++#define wxUSE_PALETTE       1
++
++// ----------------------------------------------------------------------------
++// wxUniversal-only options
++// ----------------------------------------------------------------------------
++
++// Set to 1 to enable compilation of all themes, this is the default
++#define wxUSE_ALL_THEMES    1
++
++// Set to 1 to enable the compilation of individual theme if wxUSE_ALL_THEMES
++// is unset, if it is set these options are not used; notice that metal theme
++// uses Win32 one
++#define wxUSE_THEME_GTK     0
++#define wxUSE_THEME_METAL   0
++#define wxUSE_THEME_MONO    0
++#define wxUSE_THEME_WASM    0
++#define wxUSE_THEME_WIN32   0
++
++
+diff --git a/include/wx/wasm/toplevel.h b/include/wx/wasm/toplevel.h
+new file mode 100644
+index 0000000000..7a593c6ee6
+--- /dev/null
++++ b/include/wx/wasm/toplevel.h
+@@ -0,0 +1,108 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/toplevel.h
++// Purpose:
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef _WX_WASM_TOPLEVEL_H_
++#define _WX_WASM_TOPLEVEL_H_
++
++//-----------------------------------------------------------------------------
++// wxTopLevelWindowWasm
++//-----------------------------------------------------------------------------
++
++class WXDLLIMPEXP_CORE wxTopLevelWindowWasm : public wxTopLevelWindowBase
++{
++    typedef wxTopLevelWindowBase base_type;
++public:
++    // construction
++    wxTopLevelWindowWasm() { Init(); }
++    wxTopLevelWindowWasm(wxWindow *parent,
++                         wxWindowID id,
++                         const wxString& title,
++                         const wxPoint& pos = wxDefaultPosition,
++                         const wxSize& size = wxDefaultSize,
++                         long style = wxDEFAULT_FRAME_STYLE,
++                         const wxString& name = wxFrameNameStr)
++    {
++        Init();
++        Create(parent, id, title, pos, size, style, name);
++    }
++
++    bool Create(wxWindow *parent,
++                wxWindowID id,
++                const wxString& title,
++                const wxPoint& pos = wxDefaultPosition,
++                const wxSize& size = wxDefaultSize,
++                long style = wxDEFAULT_FRAME_STYLE,
++                const wxString& name = wxFrameNameStr);
++
++    virtual ~wxTopLevelWindowWasm() { }
++
++    virtual wxPoint GetClientAreaOrigin() const wxOVERRIDE;
++
++    // implement base class pure virtuals
++    virtual void Maximize(bool WXUNUSED(maximize) = true) wxOVERRIDE { }
++    virtual bool IsMaximized() const wxOVERRIDE { return false; }
++    virtual bool IsAlwaysMaximized() const wxOVERRIDE { return IsMainFrame(); }
++    virtual void Iconize(bool WXUNUSED(iconize) = true) wxOVERRIDE { }
++    virtual bool IsIconized() const wxOVERRIDE { return false; }
++    virtual void Restore() wxOVERRIDE { }
++
++    virtual void SetIcons(const wxIconBundle& icons) wxOVERRIDE;
++
++    virtual void ShowWithoutActivating() wxOVERRIDE;
++    virtual bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL) wxOVERRIDE;
++    virtual bool IsFullScreen() const wxOVERRIDE;
++
++    virtual bool IsActive() wxOVERRIDE { return m_isActive; }
++
++    virtual void SetTitle(const wxString &title) wxOVERRIDE;
++    virtual wxString GetTitle() const wxOVERRIDE { return m_title; }
++
++    virtual wxString GetCSSClassList() const wxOVERRIDE {
++      return wxNonOwnedWindow::GetCSSClassList() + " toplevel";
++    }
++
++protected:
++    virtual void DoGetClientSize(int *width, int *height) const wxOVERRIDE;
++    virtual void DoSetClientSize(int width, int height) wxOVERRIDE;
++
++    virtual void DoScreenToClient(int *x, int *y) const wxOVERRIDE;
++    virtual void DoClientToScreen(int *x, int *y) const wxOVERRIDE;
++
++    virtual bool HasTitleBar() const;
++
++private:
++    void Init();
++
++    void SetActive(bool active) { m_isActive = active; }
++
++    void DrawTitleText(wxDC& dc, const wxRect& rect);
++    void DrawMinimizeButton(wxDC& dc, const wxRect& rect);
++
++    void StartDrag(const wxPoint& pos);
++    void EndDrag();
++    void DragMove(const wxPoint& pos);
++
++    void OnNcPaint(wxNcPaintEvent& event);
++    void OnMouseDown(wxMouseEvent& event);
++    void OnMouseUp(wxMouseEvent& event);
++    void OnMotion(wxMouseEvent& event);
++
++    bool m_isActive;
++    wxString m_title;
++
++    wxRect m_minimizeButtonRect;
++
++    bool m_isDragging;
++    wxPoint m_dragOffset;
++
++    friend class wxApp;
++
++    wxDECLARE_EVENT_TABLE();
++};
++
++#endif // _WX_WASM_TOPLEVEL_H_
+diff --git a/include/wx/wasm/window.h b/include/wx/wasm/window.h
+new file mode 100644
+index 0000000000..7f7b9fcd89
+--- /dev/null
++++ b/include/wx/wasm/window.h
+@@ -0,0 +1,129 @@
++/////////////////////////////////////////////////////////////////////////////
++// Name:        wx/wasm/window.h
++// Purpose:     wxWindowWasm
++// Author:      Adam Hilss
++// Copyright:   (c) 2019 Adam Hilss
++// Licence:     LGPL v2
++/////////////////////////////////////////////////////////////////////////////
++
++#ifndef __WX_WASM_WINDOW_H__
++#define __WX_WASM_WINDOW_H__
++
++class wxNonOwnedWindow;
++
++class WXDLLIMPEXP_CORE wxWindowWasm : public wxWindowBase
++{
++public:
++    // creating the window
++    // -------------------
++    wxWindowWasm();
++    wxWindowWasm(wxWindow *parent,
++                 wxWindowID id,
++                 const wxPoint& pos = wxDefaultPosition,
++                 const wxSize& size = wxDefaultSize,
++                 long style = 0,
++                 const wxString& name = wxPanelNameStr);
++    virtual ~wxWindowWasm();
++
++    bool Create(wxWindow *parent,
++                wxWindowID id,
++                const wxPoint& pos = wxDefaultPosition,
++                const wxSize& size = wxDefaultSize,
++                long style = 0,
++                const wxString& name = wxPanelNameStr);
++
++    // implement base class pure virtuals
++    virtual void SetLabel(const wxString& label) wxOVERRIDE { m_label = label; }
++    virtual wxString GetLabel() const wxOVERRIDE { return m_label; }
++
++    virtual void Raise() wxOVERRIDE;
++    virtual void Lower() wxOVERRIDE;
++
++    virtual bool Show(bool show = true) wxOVERRIDE;
++
++    virtual void SetFocus() wxOVERRIDE;
++
++    virtual void WarpPointer(int x, int y) wxOVERRIDE;
++
++    virtual void Refresh(bool eraseBackground = true,
++                         const wxRect *rect = (const wxRect *) NULL) wxOVERRIDE;
++
++    virtual bool SetFont(const wxFont& font) wxOVERRIDE;
++
++    virtual bool SetCursor(const wxCursor &cursor) wxOVERRIDE;
++
++    virtual int GetCharHeight() const wxOVERRIDE;
++    virtual int GetCharWidth() const wxOVERRIDE;
++
++    virtual double GetContentScaleFactor() const wxOVERRIDE;
++    virtual double GetDPIScaleFactor() const wxOVERRIDE;
++
++#if wxUSE_DRAG_AND_DROP
++    virtual void SetDropTarget(wxDropTarget *dropTarget) wxOVERRIDE;
++#endif // wxUSE_DRAG_AND_DROP
++
++    virtual bool IsDoubleBuffered() const wxOVERRIDE { return true; }
++
++    virtual WXWidget GetHandle() const wxOVERRIDE { return NULL; }
++
++    virtual bool HasTransparentBackground() wxOVERRIDE;
++
++    wxNonOwnedWindow* GetTopLevelWindow();
++
++    bool NeedsPaint() const { return m_childNeedsPaint; }
++    bool SelfNeedsPaint() const { return m_selfNeedsPaint; }
++    void Invalidate(bool needsPaint);
++
++protected:
++    virtual void DoGetTextExtent(const wxString& string,
++                                 int *x, int *y,
++                                 int *descent = NULL,
++                                 int *externalLeading = NULL,
++                                 const wxFont *theFont = NULL) const wxOVERRIDE;
++
++    virtual void DoClientToScreen(int *x, int *y) const wxOVERRIDE;
++    virtual void DoScreenToClient(int *x, int *y) const wxOVERRIDE;
++
++    virtual void DoGetPosition(int *x, int *y) const wxOVERRIDE;
++    virtual void DoGetSize(int *width, int *height) const wxOVERRIDE;
++    virtual void DoGetClientSize(int *width, int *height) const wxOVERRIDE;
++    virtual void DoSetSize(int x, int y,
++                           int width, int height,
++                           int sizeFlags = wxSIZE_AUTO) wxOVERRIDE;
++    virtual void DoSetClientSize(int width, int height) wxOVERRIDE;
++
++    virtual void DoMoveWindow(int x, int y, int width, int height) wxOVERRIDE;
++    virtual void DoEnable(bool enable) wxOVERRIDE;
++
++    virtual void DoCaptureMouse() wxOVERRIDE;
++    virtual void DoReleaseMouse() wxOVERRIDE;
++
++    virtual void DoFreeze() wxOVERRIDE { }
++    virtual void DoThaw() wxOVERRIDE;
++
++    // implementation
++    void KillFocus();
++
++    void EraseBackgroundWindow();
++    void PaintSelf();
++    void PaintChildren(bool selfWasPainted);
++    void DoPaint(bool parentWasPainted);
++
++private:
++    void Init();
++
++    int m_x, m_y;          // window position
++    int m_width, m_height; // window size
++
++    wxString m_label;
++
++    bool m_childNeedsPaint;
++    bool m_selfNeedsPaint;
++
++    wxDECLARE_DYNAMIC_CLASS(wxWindowWasm);
++    wxDECLARE_NO_COPY_CLASS(wxWindowWasm);
++};
++
++extern wxWindow *g_mouseWindow;
++
++#endif // __WX_WASM_WINDOW_H__

@@ -1,0 +1,11 @@
+--- a/configure
++++ b/configure
+@@ -26461,8 +26461,6 @@
+     if test "$wxUSE_WASM" = 1; then
+         TOOLKIT=WASM
+         TOOLKIT_INCLUDE=""
+-        GUI_TK_LIBRARY="-lpng"
+-        LIBS="$LIBS -lz"
+     fi
+ 
+     if test "$wxUSE_QT" = 1; then

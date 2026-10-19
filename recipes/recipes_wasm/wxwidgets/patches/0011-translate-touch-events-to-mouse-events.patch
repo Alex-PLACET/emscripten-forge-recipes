@@ -1,0 +1,254 @@
+diff --git a/include/wx/wasm/private/mouse.h b/include/wx/wasm/private/mouse.h
+index 4cc60bbeb3..fecf59f566 100644
+--- a/include/wx/wasm/private/mouse.h
++++ b/include/wx/wasm/private/mouse.h
+@@ -21,5 +21,8 @@ bool EmscriptenWheelEventToWXEvent(const EmscriptenWheelEvent &emscriptenEvent,
+                                    wxOrientation orientation,
+                                    wxMouseEvent *mouseEvent);
+ 
++bool EmscriptenTouchEventToWXEvent(int touchEventType,
++                                   const EmscriptenTouchEvent &touchEvent,
++                                   wxMouseEvent *mouseEvent);
+ 
+ #endif // _WX_WASM_PRIVATE_MOUSE_H_
+diff --git a/src/wasm/app.cpp b/src/wasm/app.cpp
+index 6e9bc5bdb0..c61fccfbdb 100644
+--- a/src/wasm/app.cpp
++++ b/src/wasm/app.cpp
+@@ -433,6 +433,18 @@ const char *GetEventName(int eventType)
+         case EMSCRIPTEN_EVENT_MOUSELEAVE:
+             return "mouseleave";
+             break;
++        case EMSCRIPTEN_EVENT_TOUCHSTART:
++            return "touchstart";
++            break;
++        case EMSCRIPTEN_EVENT_TOUCHEND:
++            return "touchend";
++            break;
++        case EMSCRIPTEN_EVENT_TOUCHMOVE:
++            return "touchmove";
++            break;
++        case EMSCRIPTEN_EVENT_TOUCHCANCEL:
++            return "touchcancel";
++            break;
+         default:
+             break;
+     }
+@@ -513,6 +525,36 @@ EM_BOOL MouseCallback(int eventType,
+     return true;
+ }
+ 
++EM_BOOL TouchCallback(int eventType,
++                      const EmscriptenTouchEvent *emscriptenEvent,
++                      void *userData)
++{
++    //const char *eventName = GetEventName(eventType);
++    //printf("TouchCallback: %s %d %ld %ld\n", eventName, emscriptenEvent->numTouches, emscriptenEvent->touches[0].targetX, emscriptenEvent->touches[0].targetY);
++
++    wxApp* app = static_cast<wxApp*>(userData);
++    wxMouseEvent event;
++
++    if (EmscriptenTouchEventToWXEvent(eventType, *emscriptenEvent, &event))
++    {
++        if (event.GetEventType() == wxEVT_LEFT_DOWN)
++        {
++            // Mirroring browser behavior, move the mouse to the new location
++            // before sending the mouse down event.
++            wxMouseEvent moveEvent(event);
++            moveEvent.SetEventType(wxEVT_MOTION);
++            moveEvent.SetLeftDown(false);
++            moveEvent.m_clickCount = 0;
++            app->HandleMouseEvent(&moveEvent);
++
++        }
++        app->HandleMouseEvent(&event);
++        return true;
++    } else {
++        return false;
++    }
++}
++
+ EM_BOOL WheelCallback(int WXUNUSED(eventType),
+                       const EmscriptenWheelEvent *emscriptenEvent,
+                       void *userData)
+@@ -617,6 +659,18 @@ void RegisterEmscriptenCallbacks(wxApp* app)
+     result = emscripten_set_wheel_callback("#canvas", app, false, WheelCallback);
+     wxASSERT(result == EMSCRIPTEN_RESULT_SUCCESS);
+ 
++    result = emscripten_set_touchstart_callback("#canvas", app, false, TouchCallback);
++    wxASSERT(result == EMSCRIPTEN_RESULT_SUCCESS);
++
++    result = emscripten_set_touchend_callback("#canvas", app, false, TouchCallback);
++    wxASSERT(result == EMSCRIPTEN_RESULT_SUCCESS);
++
++    result = emscripten_set_touchmove_callback("#canvas", app, false, TouchCallback);
++    wxASSERT(result == EMSCRIPTEN_RESULT_SUCCESS);
++
++    result = emscripten_set_touchcancel_callback("#canvas", app, false, TouchCallback);
++    wxASSERT(result == EMSCRIPTEN_RESULT_SUCCESS);
++
+     result = emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, false, ResizeCallback);
+     wxASSERT(result == EMSCRIPTEN_RESULT_SUCCESS);
+ 
+diff --git a/src/wasm/mouse.cpp b/src/wasm/mouse.cpp
+index ff8bd73ecd..e3a2d1cfde 100644
+--- a/src/wasm/mouse.cpp
++++ b/src/wasm/mouse.cpp
+@@ -110,39 +110,52 @@ wxEventType GetMouseEventType(int emscriptenEventType,
+     return eventType;
+ }
+ 
+-void SetKeyboardState(const EmscriptenMouseEvent& emscriptenEvent,
++void SetKeyboardState(bool ctrlKey,
++                      bool shiftKey,
++                      bool altKey,
++                      bool metaKey,
+                       wxMouseEvent *event)
+ {
+     if ((wxGetOsVersion() & wxOS_MAC) != 0)
+     {
+-        event->SetControlDown(emscriptenEvent.metaKey);
++        event->SetControlDown(metaKey);
+         event->SetMetaDown(false);
+     }
+     else
+     {
+-        event->SetControlDown(emscriptenEvent.ctrlKey);
+-        event->SetMetaDown(emscriptenEvent.metaKey);
++        event->SetControlDown(ctrlKey);
++        event->SetMetaDown(metaKey);
+     }
+-    event->SetShiftDown(emscriptenEvent.shiftKey);
+-    event->SetAltDown(emscriptenEvent.altKey);
+-    event->SetRawControlDown(emscriptenEvent.ctrlKey);
++    event->SetShiftDown(shiftKey);
++    event->SetAltDown(altKey);
++    event->SetRawControlDown(ctrlKey);
+ }
+ 
+-void SetMouseState(const EmscriptenMouseEvent& emscriptenEvent, wxMouseState *event)
++void SetMouseState(long targetX,
++                   long targetY,
++                   unsigned short buttons,
++                   wxMouseState *event)
+ {
+-    event->SetX(emscriptenEvent.targetX);
+-    event->SetY(emscriptenEvent.targetY);
+-    event->SetLeftDown((emscriptenEvent.buttons & 1) != 0);
+-    event->SetRightDown((emscriptenEvent.buttons & 2) != 0);
+-    event->SetMiddleDown((emscriptenEvent.buttons & 4) != 0);
++    event->SetX(targetX);
++    event->SetY(targetY);
++    event->SetLeftDown((buttons & 1) != 0);
++    event->SetRightDown((buttons & 2) != 0);
++    event->SetMiddleDown((buttons & 4) != 0);
+     event->SetAux1Down(false);
+     event->SetAux2Down(false);
+ }
+ 
+ void InitMouseEventCommon(const EmscriptenMouseEvent& emscriptenEvent, wxMouseEvent *event)
+ {
+-    SetKeyboardState(emscriptenEvent, event);
+-    SetMouseState(emscriptenEvent, event);
++    SetKeyboardState(emscriptenEvent.ctrlKey,
++                     emscriptenEvent.shiftKey,
++                     emscriptenEvent.altKey,
++                     emscriptenEvent.metaKey,
++                     event);
++    SetMouseState(emscriptenEvent.targetX,
++                  emscriptenEvent.targetY,
++                  emscriptenEvent.buttons,
++                  event);
+ }
+ 
+ } // anonymous namespace
+@@ -211,3 +224,89 @@ bool EmscriptenMouseEventToWXEvent(int emscriptenEventType,
+ 
+     return true;
+ }
++
++bool EmscriptenTouchEventToWXEvent(int touchEventType,
++                                   const EmscriptenTouchEvent &touchEvent,
++                                   wxMouseEvent *mouseEvent)
++{
++    static bool hasTouch = false;
++    static long firstTouchId = 0;
++
++    wxEventType eventType = wxEVT_NULL;
++    unsigned short buttons;
++    int clickCount;
++    int touchIndex;
++
++    if (touchEventType == EMSCRIPTEN_EVENT_TOUCHSTART)
++    {
++        if (!hasTouch && touchEvent.numTouches == 1)
++        {
++            hasTouch = true;
++            firstTouchId = touchEvent.touches[0].identifier;
++
++            eventType = wxEVT_LEFT_DOWN;
++            buttons = 1;
++            clickCount = 1;
++            touchIndex = 0;
++        }
++    }
++    else if (touchEventType == EMSCRIPTEN_EVENT_TOUCHEND ||
++             touchEventType == EMSCRIPTEN_EVENT_TOUCHCANCEL)
++    {
++        if (hasTouch)
++        {
++            for (int i = 0; i < touchEvent.numTouches; i++)
++            {
++                if (firstTouchId == touchEvent.touches[i].identifier &&
++                    (touchEvent.touches[i].isChanged ||
++                     touchEventType == EMSCRIPTEN_EVENT_TOUCHCANCEL))
++                {
++                    hasTouch = false;
++
++                    eventType = wxEVT_LEFT_UP;
++                    buttons = 0;
++                    clickCount = 1;
++                    touchIndex = i;
++                }
++            }
++        }
++    }
++    else if (touchEventType == EMSCRIPTEN_EVENT_TOUCHMOVE)
++    {
++        if (hasTouch)
++        {
++            for (int i = 0; i < touchEvent.numTouches; i++)
++            {
++                if (firstTouchId == touchEvent.touches[i].identifier &&
++                    touchEvent.touches[i].isChanged)
++                {
++                    eventType = wxEVT_MOTION;
++                    buttons = 1;
++                    clickCount = 0;
++                    touchIndex = i;
++                }
++            }
++        }
++    }
++
++    if (eventType != wxEVT_NULL)
++    {
++        mouseEvent->SetEventType(eventType);
++        mouseEvent->m_clickCount = clickCount;
++
++        SetKeyboardState(touchEvent.ctrlKey,
++                         touchEvent.shiftKey,
++                         touchEvent.altKey,
++                         touchEvent.metaKey,
++                         mouseEvent);
++        SetMouseState(touchEvent.touches[touchIndex].targetX,
++                      touchEvent.touches[touchIndex].targetY,
++                      buttons,
++                      mouseEvent);
++        return true;
++    }
++    else
++    {
++        return false;
++    }
++}

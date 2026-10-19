@@ -1,0 +1,14 @@
+--- a/build/wasm/template.html
++++ b/build/wasm/template.html
+@@ -46,6 +46,11 @@
+     var statusElement = document.getElementById('progress-text');
+     var progressElement = document.getElementById('progress-bar-position');
+ 
++    var showError = function (text) {
++      statusElement.innerHTML = text;
++      console.error(text);
++    };
++
+     var createCanvas = function () {
+       var canvas = document.createElement('canvas');
+       canvas.id = 'canvas';

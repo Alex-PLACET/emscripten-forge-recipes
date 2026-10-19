@@ -1,0 +1,10 @@
+--- a/src/wasm/window.cpp
++++ b/src/wasm/window.cpp
+@@ -704,3 +704,7 @@
+     return wxGenericFindWindowAtPoint(pt);
+ }
+ 
++wxWindow* wxFindWindowAtPointer(wxPoint& pt)
++{
++    return wxFindWindowAtPoint(pt);
++}
