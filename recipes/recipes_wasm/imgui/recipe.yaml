@@ -1,0 +1,90 @@
+context:
+  name: imgui
+  version: "1.93.0"
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/ocornut/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: f7bf6bc76e5d79d40d751096663e6c5d18daf08129dd52e7f7b09e4251c8eeee
+  - path: CMakeLists.txt
+  - path: imgui-config.cmake.in
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+
+tests:
+  - package_contents:
+      files:
+        - include/imgui.h
+        - include/imgui_internal.h
+        - include/imconfig.h
+        - include/imstb_rectpack.h
+        - include/imstb_textedit.h
+        - include/imstb_truetype.h
+        - include/imgui_stdlib.h
+        - include/imgui_impl_null.h
+        - include/imgui_impl_glfw.h
+        - include/imgui_impl_sdl2.h
+        - include/imgui_impl_sdlrenderer2.h
+        - include/imgui_impl_opengl3.h
+        - include/imgui_impl_opengl3_loader.h
+        - lib/libimgui.a
+        - lib/libimgui_impl_null.a
+        - lib/libimgui_impl_glfw.a
+        - lib/libimgui_impl_sdl2.a
+        - lib/libimgui_impl_sdlrenderer2.a
+        - lib/libimgui_impl_opengl3.a
+        - lib/cmake/imgui/imgui-config.cmake
+        - lib/cmake/imgui/imgui-config-version.cmake
+        - lib/cmake/imgui/imgui-targets.cmake
+        - share/imgui/backends/imgui_impl_null.cpp
+        - share/imgui/backends/imgui_impl_opengl3.cpp
+        - share/imgui/backends/imgui_impl_glfw.cpp
+        - share/imgui/backends/imgui_impl_sdl2.cpp
+        - share/imgui/backends/imgui_impl_sdlrenderer2.cpp
+
+  - script:
+      - bash build_tests.sh
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - nodejs
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/
+
+  - script: generic-testing
+    requirements:
+      build:
+        - generic-testing
+
+about:
+  homepage: https://github.com/ocornut/imgui
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Bloat-free graphical user interface library for C++
+  description: |
+    Dear ImGui is a bloat-free graphical user interface library for C++.
+    It outputs optimized vertex buffers that you can render anytime in your
+    3D-pipeline-enabled application. It is fast, portable, renderer agnostic,
+    and self-contained (no external dependencies).
+  documentation: https://github.com/ocornut/imgui/wiki
+  repository: https://github.com/ocornut/imgui
+
+extra:
+  recipe-maintainers:
+    - Alex-PLACET
