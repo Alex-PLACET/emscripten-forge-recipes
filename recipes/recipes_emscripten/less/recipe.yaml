@@ -1,14 +1,14 @@
 context:
   name: less
-  version: '696'
+  version: 710
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/gwsw/less/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: cef0f7bd79f6d9e7d4f49adc2132b71f1be1530de663f0a6c264293e2ce91383
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d1008fb78dcae1323ddab664bcb352a61f022b1b131bd8018548e021d975ec7a
 
 build:
   number: 0
